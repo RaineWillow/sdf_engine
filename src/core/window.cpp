@@ -70,6 +70,10 @@ void Window::run() {
     }
     ImGui::SFML::Update(*_window, _state->deltaTime);
     scenes[_state->currentScene]->update(_window);
+
+    sf::Time updateEnd = _state->deltaClock.getElapsedTime();
+    _state->updateTime = updateEnd-updateStart;
+    
     ImGui::SetNextWindowPos(ImVec2(-1, 0));
     ImGui::SetNextWindowSize(ImVec2(_state->windowWidth+5, 20));
     bool active = true;
@@ -84,9 +88,6 @@ void Window::run() {
     ImGui::End();
 
     console->display();
-
-    sf::Time updateEnd = _state->deltaClock.getElapsedTime();
-    _state->updateTime = updateEnd-updateStart;
 
     //handle rendering
     _window->clear(sf::Color(0, 0, 0));

@@ -34,6 +34,9 @@ private:
 
   int maxShapes = 10000;
 
+  int _memoryBufferResolutionX;
+  int _memoryBufferResolutionY;
+
   sf::Texture _memoryBuffer;
 
   sf::Uint8 * _memoryBufferUpdateArray;

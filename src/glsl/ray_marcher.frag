@@ -103,15 +103,10 @@ dInt convertPixToDInt(vec4 pixel) {
   int set2 = int(pixel.b*255.0);
   int set3 = int(pixel.a*255.0);
 
-  int num1 = set0*256 + set1;
-  if (num1 > 32767) {
-    num1 -= 65536;
-  }
+  ivec2 signBits = vec2(set0 << 7, set2 << 7);
 
-  int num2 = set2*256 + set3;
-  if (num2 > 32767) {
-    num2 -= 65536;
-  }
+  int num1 = (set0*256 + set1) - 65536*signBits.x;
+  int num2 = (set2*256 + set3) - 65536*signBits.y;
 
   return dInt(num1, num2);
 }
