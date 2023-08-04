@@ -22,8 +22,8 @@ void BVHTree::bind(sf::Shader & shader, std::string bufferName) {
 
 
 void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
-  //if the node does not have any children, simply set this node as the first child and set
-  //our bounding box accordingly.
+  //if the node does not have any children, simply set this node as the first child and 
+  //set our bounding box accordingly.
   if (!node->hasChildren()) {
     node->setPos(item->getPos());
     node->setBound(item->getBound());
@@ -55,8 +55,8 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   //based on it's position.
   int itemOctant = getBoxOctant(newBox, item->getPos());
 
-  //we will first check if there is a bounding volume that is not a leaf which we can use
-  //to add the child to
+  //we will first check if there is a bounding volume that is not a leaf which we use to
+  //add the child to
   for (int i = 0; i < 8; i++) {
     if (node->hasChild(i)) {
       BVHTreeNode * testChild = node->getChild(i);
@@ -65,9 +65,10 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
       if (testChild->isLeaf()) {
         continue;
       }
-      //the child was not a leaf, so lets see if there is a bounding volume already in the
-      //octant of the current box which we can attach our new item to. this is common if
-      //the bounding volume of the node did not change, even after adding the item
+      //the child was not a leaf, so lets see if there is a bounding volume already in 
+      //the octant of the current box which we can attach our new item to. this is 
+      //common if the bounding volume of the node did not change, even after adding the 
+      //item
       if (getBoxOctant(newBox, testChild->getPos()) == itemOctant) {
         node->updateParams(_writeBuffer);
         _memoryBuffer.writeItem(node->getAddress().pointerIndex(), _writeBuffer);
@@ -84,7 +85,7 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   //this octmap keeps track of each node we need to move, as well as it's octant.
   std::map<int, std::vector<BVHTreeNode*>> octMap;
 
-  //we loop through each child and remove it from the node, whild adding it to the
+  //we loop through each child and remove it from the node, while adding it to the
   //octmap
   for (int i = 0; i < 8; i++) {
     if (node->hasChild(i)) {
@@ -117,6 +118,6 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   //lastly, we deal with our item. if there is a free space, it will just end up in this
   //bounding volume, but if there isn't a free space (odd case where every item was in a 
   //different octant) it will find it's octant and be moved there. either way, the
-  //will have created a space for it somewhere.
+  //previous steps will have created a space for it somewhere.
   addItemFromNode(node, item);
 }

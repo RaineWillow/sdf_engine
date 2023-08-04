@@ -19,12 +19,18 @@ public:
       Pixel defaultParam;
       _params.push_back(defaultParam);
     }
-
-    _params[0].toInt(1);
   }
 
   bool isModel() {
     return _isModel;
+  }
+
+  void setAddress(Pixel address) {
+    _address = address;
+  }
+
+  Pixel getAddress() {
+    return _address;
   }
 
   std::string getModelId() {
@@ -43,7 +49,7 @@ public:
     return _boundRadius;
   }
 
-  sf::Glsl::Vec3 getBox() {
+  sf::Glsl::Vec3 getBound() {
     return _box;
   }
 
@@ -81,74 +87,70 @@ public:
   void setModel(std::string modelId) {
     _isModel = true;
     _modelId = modelId;
-    _params[1].toIBool(_isModel, _objectId);
+    _params[0].toIBool(_isModel, _objectId);
   }
 
   void setPos(sf::Glsl::Vec3 pos) {
     _pos = pos;
-    _params[3].toNum(_pos.x);
-    _params[4].toNum(_pos.y);
-    _params[5].toNum(_pos.z);
+    _params[2].toNum(_pos.x);
+    _params[3].toNum(_pos.y);
+    _params[4].toNum(_pos.z);
   }
 
   void setQRot(sf::Glsl::Vec4 qRot) {
     _qRot = qRot;
-    _params[6].toHighFloat(_qRot.x);
-    _params[7].toHighFloat(_qRot.y);
-    _params[8].toHighFloat(_qRot.z);
-    _params[9].toHighFloat(_qRot.w);
+    _params[5].toHighFloat(_qRot.x);
+    _params[6].toHighFloat(_qRot.y);
+    _params[7].toHighFloat(_qRot.z);
+    _params[8].toHighFloat(_qRot.w);
   }
 
   void setBoundRadius(double radius) {
     _boundRadius = radius;
-    _params[10].toNum(_boundRadius);
-    setBox(sf::Glsl::Vec3(_boundRadius*2, _boundRadius*2, _boundRadius*2));
+    _params[9].toNum(_boundRadius);
+    setBound(sf::Glsl::Vec3(_boundRadius*2, _boundRadius*2, _boundRadius*2));
   }
 
-  void setBox(sf::Glsl::Vec3 boundingBox) {
+  void setBound(sf::Glsl::Vec3 boundingBox) {
     _box = boundingBox;
-    _params[11].toNum(_box.x);
-    _params[12].toNum(_box.y);
-    _params[13].toNum(_box.z);
+    _params[10].toNum(_box.x);
+    _params[11].toNum(_box.y);
+    _params[12].toNum(_box.z);
   }
 
   void setAmbient(sf::Glsl::Vec3 ambient) {
     _aColor = ambient;
-    _params[14].toColor(_aColor);
+    _params[13].toColor(_aColor);
   }
 
   void setDiffuse(sf::Glsl::Vec3 diffuse) {
     _dColor = diffuse;
-    _params[15].toColor(_aColor);
+    _params[14].toColor(_aColor);
   }
 
   void setSpecular(sf::Glsl::Vec3 specular) {
     _sColor = specular;
-    _params[16].toColor(_aColor);
+    _params[15].toColor(_aColor);
   }
 
   void setShine(double shine) {
     _shine = shine;
-    _params[17].toHighFloat(_shine);
+    _params[16].toHighFloat(_shine);
   }
 
   void setOpacity(double opacity) {
     _opacity = opacity;
-    _params[18].toHighFloat(_opacity);
+    _params[17].toHighFloat(_opacity);
   }
 
   void setIOR(double IOR) {
     _IOR = IOR;
-    _params[19].toHighFloat(_opacity);
+    _params[18].toHighFloat(_opacity);
   }
 
   void setEmit(sf::Glsl::Vec4 emit) {
     _emit = emit;
-    _params[20].to4Color(emit);
-  }
-
-  void setBVHTreeNode(BVHTreeNode * node) {
-    _BVHTreeNode = node;
+    _params[19].to4Color(emit);
   }
 
   void destroy() {
@@ -157,6 +159,10 @@ public:
 
   bool destroyed() {
     return _destroyed;
+  }
+
+  void setBVHTreeNode(BVHTreeNode * node) {
+    _BVHTreeNode = node;
   }
 
   void updateParams(sf::Uint8 * dataArray) {
@@ -186,9 +192,10 @@ protected:
 
   void setObjectId(int id) {
     _objectId = id;
-    _params[1].toIBool(_isModel, _objectId);
+    _params[0].toIBool(_isModel, _objectId);
   }
 
+  Pixel _address;
   std::vector<Pixel> _params;
 
   BVHTreeNode * _BVHTreeNode = NULL;

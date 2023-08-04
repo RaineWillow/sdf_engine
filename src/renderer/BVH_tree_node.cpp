@@ -121,9 +121,7 @@ void BVHTreeNode::removeChild(size_t childIndex) {
   _params[7+childIndex].toPointer(0, 0);
   _hasChildren = false;
   for (int i = 0; i < 8; i++) {
-    if (hasChild(childIndex)) {
-      _hasChildren = true;
-    }
+    _hasChildren = hasChild(childIndex);
   }
   _params[0].toBool(_hasChildren);
 }
