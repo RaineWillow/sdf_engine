@@ -176,6 +176,10 @@ struct Pixel {
     a = type;
   }
 
+  int pointerIndex() {
+    return ((r << 16) + (g << 8) + b);
+  }
+
   void writeToArray(int paramIndex, sf::Uint8 * updateArray, int itemSize) {
 
     if (paramIndex > itemSize) {

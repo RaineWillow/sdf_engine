@@ -1,6 +1,6 @@
 #include "shader_memory_buffer.hpp"
 
-ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSize) {
+ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSize, int id) {
     _itemSize = itemSize;
     _itemsPerRow = itemsPerRow;
     _memoryBufferResolutionX = itemsPerRow*itemSize;
@@ -11,16 +11,18 @@ ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSiz
     for (int i = _memoryBufferResolutionX*_memoryBufferResolutionY-1; i>=0; i--) {
       _freeIndices.push_back(i);
     }
+    _id = id;
 }
 
-int ShaderMemoryBuffer::newItem(sf::Uint8 * itemArray) {
+Pixel ShaderMemoryBuffer::newItem() {
+  if (_freeIndices.size() == 0) {
+    throw std::overflow_error("Memory Buffer out of memory!");
+  }
   int newIndex = _freeIndices.back();
   _freeIndices.pop_back();
-  int memoryY = newIndex/_itemsPerRow;
-  int memoryX = (newIndex-memoryY*_itemsPerRow)*_itemSize;
-
-  _memoryBuffer.update(itemArray, _itemSize, 1, memoryX, memoryY);
-  return newIndex;
+  Pixel retPixel;
+  retPixel.toPointer(newIndex, _id);
+  return retPixel;
 }
 
 void ShaderMemoryBuffer::freeItem(int index) {

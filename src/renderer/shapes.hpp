@@ -8,8 +8,8 @@
 #include <stdexcept>
 #include <vector>
 #include <iostream>
-#include "memory/memory_pixel.hpp"
 #include "BVH_tree_node.hpp"
+#include "memory/memory_pixel.hpp"
 
 class Shape {
 public:
@@ -71,7 +71,7 @@ public:
     return _IOR;
   }
 
-  BVHTreeNode<Shape> * getBVHTreeNode() {
+  BVHTreeNode * getBVHTreeNode() {
     if (_BVHTreeNode == NULL) {
       throw std::logic_error("Cannot get the BVH Tree Node of a shape that has not had it's node set!");
     }
@@ -102,7 +102,7 @@ public:
   void setBoundRadius(double radius) {
     _boundRadius = radius;
     _params[10].toNum(_boundRadius);
-    setBox(sf::Glsl::Vec3(_boundRadius, _boundRadius, _boundRadius));
+    setBox(sf::Glsl::Vec3(_boundRadius*2, _boundRadius*2, _boundRadius*2));
   }
 
   void setBox(sf::Glsl::Vec3 boundingBox) {
@@ -147,7 +147,7 @@ public:
     _params[20].to4Color(emit);
   }
 
-  void setBVHTreeNode(BVHTreeNode<Shape> * node) {
+  void setBVHTreeNode(BVHTreeNode * node) {
     _BVHTreeNode = node;
   }
 
@@ -191,7 +191,7 @@ protected:
 
   std::vector<Pixel> _params;
 
-  BVHTreeNode<Shape> * _BVHTreeNode = NULL;
+  BVHTreeNode * _BVHTreeNode = NULL;
 };
 
 

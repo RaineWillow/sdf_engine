@@ -5,7 +5,7 @@ LIBS=-lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lo
 SOURCES=src/main.cpp
 CORE=src/core/window.cpp src/core/state.cpp src/core/console.cpp src/core/command.cpp
 UTILS=src/utils/trie.cpp src/utils/search_box.cpp
-RENDER=src/renderer/renderer.cpp src/renderer/memory/shader_memory_buffer.cpp
+RENDER=src/renderer/renderer.cpp src/renderer/BVH_tree_node.cpp src/renderer/BVH_tree.cpp src/renderer/memory/shader_memory_buffer.cpp
 SCENES=src/scene/render_tester.cpp
 
 IMGUI=imgui/imgui.cpp imgui/imgui_widgets.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_demo.cpp imgui/imgui-SFML.cpp

@@ -5,21 +5,22 @@
 #include "SFML/Window.hpp"
 #include "SFML/Graphics.hpp"
 #include "SFML/System.hpp"
+#include "memory_pixel.hpp"
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
 
 class ShaderMemoryBuffer {
 public:
-    ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSize);
+    ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSize, int id);
 
-    int newItem(sf::Uint8 * itemArray);
+    Pixel newItem();
     void freeItem(int index);
     void writeItem(int index, sf::Uint8 * itemArray);
 
     void bind(sf::Shader & shader, std::string bufferName);
 private:
-
+    int _id;
     int _itemSize;
     int _itemsPerRow;
     int _memoryBufferResolutionX;
