@@ -6,6 +6,7 @@
 #include "SFML/System.hpp"
 #include <vector>
 #include <algorithm>
+#include <string>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -22,6 +23,10 @@ public:
   void addShape(Shape * shape);
   void destroyShape(Shape * shape);
   void updateShape(Shape * shape);
+
+  void bind(sf::Shader & shader, std::string bufferName);
+
+  void render(sf::RenderTexture & renderTarget);
 private:
   ShaderMemoryBuffer _memoryBuffer;
   sf::Uint8 * _writeBuffer;

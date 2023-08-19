@@ -53,6 +53,13 @@ BVHTreeNode * BVHTreeNode::getParent() {
   return _parent;
 }
 
+size_t BVHTreeNode::getParentIndex() {
+  if (!hasParent()) {
+    throw std::logic_error("Error, node does not have a parent!");
+  }
+  return _parentIndex;
+}
+
 bool BVHTreeNode::isLeaf() {
   return _isLeaf;
 }
@@ -100,7 +107,7 @@ void BVHTreeNode::setChild(size_t childIndex, BVHTreeNode * child) {
   }
 
   _children[childIndex] = child;
-  _children[childIndex]->setParent(this);
+  _children[childIndex]->setParent(this, childIndex);
   _params[7+childIndex] = child->getAddress();
   _hasChildren = true;
   _params[0].toBool(_hasChildren);
@@ -126,12 +133,13 @@ void BVHTreeNode::removeChild(size_t childIndex) {
   _params[0].toBool(_hasChildren);
 }
 
-void BVHTreeNode::setParent(BVHTreeNode * parent) {
+void BVHTreeNode::setParent(BVHTreeNode * parent, size_t parentIndex) {
   if (_isRoot) {
     throw std::logic_error("Cannot set the parent of the root node!");
   }
 
   _parent = parent;
+  _parentIndex = parentIndex;
 }
 
 void BVHTreeNode::updateParams(sf::Uint8 * dataArray) {

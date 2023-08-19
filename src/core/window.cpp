@@ -1,7 +1,7 @@
 #include "window.hpp"
 Window::Window(int w, int h, std::string title) {
 
-  sf::err().rdbuf(std::cout.rdbuf());
+  //sf::err().rdbuf(std::cout.rdbuf());
   _window = new sf::RenderWindow(sf::VideoMode(w, h), title);
 
   _state = new State(_window, w, h);

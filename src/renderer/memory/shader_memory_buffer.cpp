@@ -7,11 +7,18 @@ ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSiz
     _memoryBufferResolutionY = numRows;
 
     _memoryBuffer.create(_memoryBufferResolutionX, _memoryBufferResolutionY);
+    _memoryBuffer.setSmooth(false);
 
     for (int i = _memoryBufferResolutionX*_memoryBufferResolutionY-1; i>=0; i--) {
       _freeIndices.push_back(i);
     }
     _id = id;
+
+    _writeArray = new sf::Uint8[_memoryBufferResolutionX*_memoryBufferResolutionY*4];
+}
+
+ShaderMemoryBuffer::~ShaderMemoryBuffer() {
+  delete[] _writeArray;
 }
 
 Pixel ShaderMemoryBuffer::newItem() {
@@ -50,4 +57,16 @@ void ShaderMemoryBuffer::bind(sf::Shader & shader, std::string bufferName) {
   shader.setUniform(bufferName, _memoryBuffer);
   shader.setUniform(bufferName+"BufferResolution", sf::Glsl::Vec2(_memoryBufferResolutionX, _memoryBufferResolutionY));
   shader.setUniform(bufferName+"ItemSize", _itemSize);
+}
+
+void ShaderMemoryBuffer::render(sf::RenderTexture & renderTarget) {
+  sf::Sprite drawEnable;
+  drawEnable.setTexture(_memoryBuffer);
+  drawEnable.setTextureRect(sf::IntRect(0, 0, 300, 100));
+  drawEnable.setPosition(sf::Vector2f(20, 20));
+  sf::RectangleShape newRect(sf::Vector2f(300, 100));
+  newRect.setPosition(sf::Vector2f(20, 20));
+  newRect.setFillColor(sf::Color(255, 255, 255));
+  renderTarget.draw(newRect);
+  renderTarget.draw(drawEnable);
 }

@@ -1,6 +1,9 @@
 #include "renderer.hpp"
 
-Renderer::Renderer(int width, int height) : _marchDrawable(sf::Quads, 4) {
+Renderer::Renderer(int width, int height) : 
+_marchDrawable(sf::Quads, 4), 
+_shapesContainer(1),
+_BVHUnion(2) {
   if (!_marcher.loadFromFile("src/glsl/ray_marcher.frag", sf::Shader::Fragment)) {
 
   }
@@ -22,28 +25,20 @@ Renderer::Renderer(int width, int height) : _marchDrawable(sf::Quads, 4) {
   _marchDrawable[1].color = sf::Color(0, 0, 0, 0);
   _marchDrawable[2].color = sf::Color(0, 0, 0, 0);
   _marchDrawable[3].color = sf::Color(0, 0, 0, 0);
-
-  _memoryBufferResolutionX = 4800;
-  _memoryBufferResolutionY = 1000;
-
-  _memoryBuffer.create(_memoryBufferResolutionX, _memoryBufferResolutionY);
-
-  _marcher.setUniform("memoryBuffer", _memoryBuffer);
-  _marcher.setUniform("memoryBufferResolution", sf::Glsl::Vec2(_memoryBufferResolutionX, _memoryBufferResolutionY));
-
-  _memoryBufferUpdateArray = new sf::Uint8[_memoryBufferResolutionX*_memoryBufferResolutionY*4];
+  _shapesContainer.bind(_marcher, "shapes");
+  _BVHUnion.bind(_marcher, "BVHUnion");
 }
 
 Renderer::~Renderer() {
-  for (auto shape : _shapes) {
-    delete shape;
-  }
-  _shapes.clear();
-
-  delete[] _memoryBufferUpdateArray;
 }
 
 void Renderer::addShape(Shape * shape) {
+  _shapesContainer.addShape(shape);
+  numShapes+=1;
+  _marcher.setUniform("numObjects", numShapes);
+  _BVHUnion.addLeaf(shape->getAddress(), shape->getPos(), shape->getBound());
+  //std::cout << numShapes << std::endl;
+  std::cout << _BVHUnion.drawTree() << std::endl;
 }
 
 void Renderer::destroyShape(Shape * shape) {
@@ -53,6 +48,7 @@ void Renderer::update() {
 }
 
 const sf::Texture & Renderer::render() {
+  _context.clear();
   _context.draw(_marchDrawable, &_marcher);
   _context.display();
   return _context.getTexture();

@@ -23,6 +23,7 @@ public:
   BVHTreeNode * getChild(size_t childIndex);
   bool hasParent();
   BVHTreeNode * getParent();
+  size_t getParentIndex();
 
   bool isLeaf();
   bool isRoot();
@@ -35,7 +36,8 @@ public:
   void setChild(size_t childIndex, BVHTreeNode * child);
   void removeChild(size_t childIndex);
 
-  void setParent(BVHTreeNode * parent);
+  void setParent(BVHTreeNode * parent, size_t parentIndex);
+  
 
   void updateParams(sf::Uint8 * dataArray);
 
@@ -52,6 +54,7 @@ private:
   std::vector<Pixel> _params;
 
   BVHTreeNode * _parent;
+  size_t _parentIndex;
   BVHTreeNode * _children[8] = {NULL};
 };
 

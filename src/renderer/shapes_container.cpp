@@ -23,3 +23,11 @@ void ShapesContainer::updateShape(Shape * shape) {
   shape->updateParams(_writeBuffer);
   _memoryBuffer.writeItem(shape->getAddress().pointerIndex(), _writeBuffer);
 }
+
+void ShapesContainer::bind(sf::Shader & shader, std::string bufferName) {
+  _memoryBuffer.bind(shader, bufferName);
+}
+
+void ShapesContainer::render(sf::RenderTexture & renderTarget) {
+  _memoryBuffer.render(renderTarget);
+}

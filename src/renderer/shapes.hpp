@@ -108,7 +108,7 @@ public:
   void setBoundRadius(double radius) {
     _boundRadius = radius;
     _params[9].toNum(_boundRadius);
-    setBound(sf::Glsl::Vec3(_boundRadius*2, _boundRadius*2, _boundRadius*2));
+    setBound(sf::Glsl::Vec3(_boundRadius, _boundRadius, _boundRadius));
   }
 
   void setBound(sf::Glsl::Vec3 boundingBox) {

@@ -46,6 +46,11 @@ struct Pixel {
       setVal += 65536;
     }
 
+    if (value < 0 && value > -1) {
+      setVal = setMantissa;
+      setMantissa = 65535;
+    }
+
     r = setVal/256;
     setVal -= r*256;
 
@@ -146,6 +151,7 @@ struct Pixel {
     r = color.x*255;
     g = color.y*255;
     b = color.z*255;
+    a = 255;
   }
 
   void to4Color(sf::Glsl::Vec4 color) {

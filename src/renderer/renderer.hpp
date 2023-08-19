@@ -8,6 +8,8 @@
 #include <vector>
 #include "SFML/OpenGL.hpp"
 #include <iostream>
+#include "shapes_container.hpp"
+#include "BVH_tree.hpp"
 
 class Renderer {
 public:
@@ -27,19 +29,13 @@ private:
   sf::Shader _marcher;
   sf::VertexArray _marchDrawable;
   sf::RenderTexture _context;
-
-  std::vector<Shape*> _shapes;
+  int numShapes = 0;
 
   bool shapesDestroyed = false;
 
   int maxShapes = 10000;
-
-  int _memoryBufferResolutionX;
-  int _memoryBufferResolutionY;
-
-  sf::Texture _memoryBuffer;
-
-  sf::Uint8 * _memoryBufferUpdateArray;
+  ShapesContainer _shapesContainer;
+  BVHTree _BVHUnion;
 };
 
 #endif
