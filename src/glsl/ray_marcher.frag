@@ -231,7 +231,7 @@ struct BVHStackFrame {
   bool processed;
 };
 
-BVHStackFrame BVHStack[1012];
+BVHStackFrame BVHStack[300];
 int itemsOnBVHStack = 0;
 
 void pushBVHStackFrame(Pointer newItem) {
@@ -365,6 +365,8 @@ Ray drawObjects(vec3 p, vec3 rd, float prec, float boundRadius) {
     }
     numShapeTests = numIterations;
 */
+
+
 /*
   for (int i = 0; i < maxObjects; i++) {
     if (i > numObjects || closest.hit) {
@@ -381,7 +383,27 @@ Ray drawObjects(vec3 p, vec3 rd, float prec, float boundRadius) {
     }
   }
 */
-
+/*
+  for (int i = 0; i < maxObjects; i++) {
+    if (i > numObjects || closest.hit) {
+      break;
+    }
+    vec3 boxPos = vec3(
+        convertPixToNum(accessBVHUnionParameter(i, 1)),
+        convertPixToNum(accessBVHUnionParameter(i, 2)),
+        convertPixToNum(accessBVHUnionParameter(i, 3))
+      );
+    //numShapeTests += 1;
+    vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
+    float objectRadius = convertPixToNum(accessShapeParameter(i, 9));
+    vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
+    vec3 objectCol = convertPixToCol(accessShapeParameter(i, 13));
+    if (sphIntersect(p, rd, objPos, objectRadius).x != -1) {
+      
+      closest = rayUnion(closest, drawObject(p, prec, i));
+    }
+  }
+*/
   /*
   for (int i = 0; i < maxObjects; i++) {
     if (i > numObjects || closest.hit) {
