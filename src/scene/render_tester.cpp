@@ -22,12 +22,12 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   testSphere2->setAmbient(sf::Glsl::Vec3(0.0, 0.0, 1.0));
   state->rayMarcher.addShape(testSphere2);
 
-  int rangeX = 40;
-  int rangeY = 40;
-  int rangeZ = 90;
-  for (int i = 0; i < 300; i++) {
-    int randX = (rand() % rangeX)-20;
-    int randY = (rand() % rangeY)-20;
+  int rangeX = 90;
+  int rangeY = 90;
+  int rangeZ = 40;
+  for (int i = 0; i < 1000; i++) {
+    int randX = (rand() % rangeX)-45;
+    int randY = (rand() % rangeY)-45;
     int randZ = rand() % rangeZ;
     Sphere * newSphere = new Sphere();
     newSphere->setPos(sf::Glsl::Vec3(randX, randY, randZ));

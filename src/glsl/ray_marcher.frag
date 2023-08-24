@@ -433,7 +433,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
   vec3 p = ro;
   float newI = 0.0;
   for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-    closest = drawObjects(p, rd, 0.005, boundRadius);
+    closest = drawObjects(p, rd, 0.01, boundRadius);
     //closest.sd = max(sdCapsule(p, p, p+rd*boundRadius, 0.1), closest.sd);
     if (closest.hit || closest.sd >= boundRadius) {
       break;
@@ -458,14 +458,13 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
     }
   }
 
-  float shapesTested = float(closest.numShapeTests)/200.0;
+  //float shapesTested = float(closest.numShapeTests)/200.0;
 
-  vec3 red = vec3(1.0, 0.0, 0.0);
-  vec3 black = vec3(0.0, 0.0, 0.0);
-  vec3 green = vec3(0.0, 1.0, 0.0);
-  closest.col = mix(black, red, min(1.0, newI));
-  closest.col = mix(closest.col, green, shapesTested);
-  closest.hit=true;
+  //vec3 red = vec3(1.0, 0.0, 0.0);
+  //vec3 black = vec3(0.0, 0.0, 0.0);
+  //closest.col = mix(black, red, min(1.0, newI));
+  //closest.col.g = shapesTested;
+  //closest.hit=true;
   
   return closest;
 }
@@ -476,7 +475,7 @@ void main() {
 
   vec3 col = vec3(0);
 
-  vec3 ro = vec3(0, 0, -30);
+  vec3 ro = vec3(0, 0, -20);
   vec3 rd = normalize(vec3(uv, 1.2));
 
 
