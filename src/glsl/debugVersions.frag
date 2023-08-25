@@ -48,7 +48,7 @@ dInt convertPixToDInt(vec4 pixel) {
   int set2 = int(pixel.b*255.0);
   int set3 = int(pixel.a*255.0);
 
-  ivec2 signBits = ivec2(set0 << 7, set2 << 7);
+  ivec2 signBits = ivec2(0, 0);
 
   int num1 = 0;//(set0*256 + set1) - 65536*signBits.x;
   int num2 = 0;//(set2*256 + set3) - 65536*signBits.y;
@@ -90,8 +90,16 @@ float convertPixToNum(vec4 pixel) {
 
   int signBit = set0 >> 7;
 
-  int num = ((set0 << 8) + set1) - 65536*signBit;
-  float mantissa = (float(set2*256 + set3)/65535.0) * float(-signBit | 1);
+  int num;
+  float mantissa;
+
+  if (set2 == 255 && set3 == 255) {
+    num = 0;
+    mantissa = -(float(set0*256 + set1)/65535.0);
+  } else {
+    num = ((set0 << 8) + set1) - 65536*signBit;
+    mantissa = (float(set2*256 + set3)/65535.0) * float(-signBit | 1);
+  }
 
 
   return float(num) + mantissa;

@@ -11,13 +11,13 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
 
   state->rayMarcher.update();
   testSphere = new Sphere();
-  testSphere->setBoundRadius(1.0);
+  testSphere->setRadius(1.0);
   testSphere->setPos(sf::Glsl::Vec3(0.0, 0.0, 0.0));
   testSphere->setAmbient(sf::Glsl::Vec3(1.0, 0.0, 0.0));
   state->rayMarcher.addShape(testSphere);
 
   testSphere2 = new Sphere();
-  testSphere2->setBoundRadius(1.0);
+  testSphere2->setRadius(1.0);
   testSphere2->setPos(sf::Glsl::Vec3(1.0, 0.0, 0.0));
   testSphere2->setAmbient(sf::Glsl::Vec3(0.0, 0.0, 1.0));
   state->rayMarcher.addShape(testSphere2);
@@ -25,13 +25,13 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 90;
   int rangeY = 90;
   int rangeZ = 40;
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 993; i++) {
     int randX = (rand() % rangeX)-45;
     int randY = (rand() % rangeY)-45;
     int randZ = rand() % rangeZ;
     Sphere * newSphere = new Sphere();
     newSphere->setPos(sf::Glsl::Vec3(randX, randY, randZ));
-    newSphere->setBoundRadius(0.5);
+    newSphere->setRadius(0.5);
     newSphere->setAmbient(sf::Glsl::Vec3(0.0, 0.9, 0.3));
     state->rayMarcher.addShape(newSphere);
     spheres.push_back(newSphere);
@@ -39,7 +39,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
 
   Sphere * finalSphere = new Sphere();
   finalSphere->setPos(sf::Glsl::Vec3(-5, -1, 0));
-  finalSphere->setBoundRadius(0.8);
+  finalSphere->setRadius(0.8);
   finalSphere->setAmbient(sf::Glsl::Vec3(1.0, 1.0, 0.0));
   state->rayMarcher.addShape(finalSphere);
   spheres.push_back(finalSphere);

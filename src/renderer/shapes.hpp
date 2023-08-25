@@ -106,7 +106,7 @@ public:
   }
 
   void setBoundRadius(double radius) {
-    _boundRadius = radius;
+    _boundRadius = radius+0.5;
     _params[9].toNum(_boundRadius);
     setBound(sf::Glsl::Vec3(_boundRadius, _boundRadius, _boundRadius));
   }
@@ -189,6 +189,7 @@ protected:
   double _opacity;
   double _IOR;
   sf::Glsl::Vec4 _emit;
+  float k = 0.5;
 
   void setObjectId(int id) {
     _objectId = id;
@@ -208,8 +209,14 @@ public:
   Sphere() : Shape() {
     this->setObjectId(0);
   }
-private:
 
+  void setRadius(double radius) {
+    _radius = radius;
+    this->_params[28].toNum(_radius);
+    this->setBoundRadius(_radius);
+  }
+private:
+  double _radius;
 };
 
 #endif /* end of include guard: Shapes_hpp */
