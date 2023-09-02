@@ -24,11 +24,11 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
 
   int rangeX = 90;
   int rangeY = 90;
-  int rangeZ = 40;
-  for (int i = 0; i < 993; i++) {
+  int rangeZ = 90;
+  for (int i = 0; i < 2000; i++) {
     int randX = (rand() % rangeX)-45;
     int randY = (rand() % rangeY)-45;
-    int randZ = rand() % rangeZ;
+    int randZ = (rand() % rangeZ);
     Sphere * newSphere = new Sphere();
     newSphere->setPos(sf::Glsl::Vec3(randX, randY, randZ));
     newSphere->setRadius(0.5);

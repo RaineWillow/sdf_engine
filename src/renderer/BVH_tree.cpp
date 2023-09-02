@@ -253,7 +253,7 @@ std::string BVHTree::drawTree() {
   std::map<int, std::string> layerData;
   this->recurseTree(_root, 0, layerData);
   for (auto const& x : layerData) {
-    retData += x.second + "\n";
+    retData += std::to_string(x.first) + " " + x.second + "\n";
   }
   std::cout << "X Pos: " << _root->getPos().x << " Y Pos: " << _root->getPos().y << " Z Pos: " << _root->getPos().z << std::endl;
   std::cout << "X Size: " << _root->getBound().x << " Y Size: " << _root->getBound().y << " Z Size: " << _root->getBound().z << std::endl;
