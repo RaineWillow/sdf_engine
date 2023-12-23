@@ -223,6 +223,10 @@ float sdAxisBox( vec3 p, vec3 b )
   vec3 q = abs(p) - b;
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
+
+float sdFloor(vec3 p) {
+  return p.y + 30.;
+}
 //end------------------------------------------------------------------------------
 
 //stack recursion defs-------------------------------------------------------------
@@ -273,6 +277,16 @@ vec3 calcNormal(vec3 p, float prec, int index) {
       e.yyx * drawObject(p + e.yyx, prec, index).sd +
       e.yxy * drawObject(p + e.yxy, prec, index).sd +
       e.xxx * drawObject(p + e.xxx, prec, index).sd
+    );
+}
+
+vec3 calcFloorNormal(vec3 p, vec3 b) {
+    vec2 e = vec2(1.0, -1.0) * 0.0005; // epsilon
+    return normalize(
+      e.xyy * sdAxisBox(p + e.xyy, b) +
+      e.yyx * sdAxisBox(p + e.yyx, b) +
+      e.yxy * sdAxisBox(p + e.yxy, b) +
+      e.xxx * sdAxisBox(p + e.xxx, b)
     );
 }
 
@@ -355,24 +369,42 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
     }
   }
 
-/*
+  Ray floorRay = Ray(boundRadius, backgroundColor, false, -1, false, 0);
+  float secondDepth = 0.;
   for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-    closest = drawObjects(p, rd, 0.01, boundRadius);
-    //closest.sd = max(sdCapsule(p, p, p+rd*boundRadius, 0.1), closest.sd);
-    if (closest.hit || closest.sd >= boundRadius) {
+    vec3 q = p+secondDepth*rd;
+    floorRay.sd = min(floorRay.sd, sdAxisBox(transform(p+secondDepth*rd, vec3(0.0, -10, 0.0)), vec3(512.0, 1.0, 512.0)));
+    floorRay.hit = floorRay.sd < 0.01;
+    floorRay.col = vec3(1. + 0.7*mod(floor(q.x) + floor(q.z), 2.0));
+    if (floorRay.hit || secondDepth >= boundRadius) {
       break;
     } else {
-      p += rd*closest.sd;
+      secondDepth += floorRay.sd;
     }
-    newI = float(i)/float(20);
   }
-*/
 
-
+  vec3 normal;
+  if (floorRay.hit && closest.hit) {
+    if (secondDepth < lastDepth) {
+      lastDepth = secondDepth;
+      closest = floorRay;
+      p = p+lastDepth*rd;
+      normal = calcFloorNormal(transform(p, vec3(0.0, -10, 0.0)), vec3(512.0, 1.0, 512.0));
+    } else {
+      p = p+lastDepth*rd;
+      normal = calcNormal(p, 0.01, closest.id);
+    }
+  } else if (closest.hit) {
+    p = p+lastDepth*rd;
+    normal = calcNormal(p, 0.01, closest.id);
+  } else if (floorRay.hit) {
+    lastDepth = secondDepth;
+    closest = floorRay;
+    p = p+lastDepth*rd;
+    normal = calcFloorNormal(transform(p, vec3(0.0, -10, 0.0)), vec3(512.0, 1.0, 512.0));
+  }
 
   if (closest.hit) {
-    p = p+lastDepth*rd;
-    vec3 normal = calcNormal(p, 0.01, closest.id);
     vec3 lightPosition = ro;
     vec3 lightDirection = normalize(lightPosition-p);
     float dif = clamp(dot(normal, lightDirection), 0.1, 1.);
@@ -404,7 +436,7 @@ void main() {
   vec3 rd = normalize(vec3(uv, 1.2));
 
 
-  Ray result = rayMarch(ro, rd, 400., backgroundColor);
+  Ray result = rayMarch(ro, rd, 1024., backgroundColor);
   col = result.col;
   if (result.hit) {
     col = pow(col, vec3(0.7));

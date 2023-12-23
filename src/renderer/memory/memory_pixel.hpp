@@ -62,7 +62,7 @@ struct Pixel {
 
     a = setMantissa;
   }
-
+//broken, temporarily
   void toHighFloat(double value) {
     if (value > 127 || value < -128) {
       throw std::invalid_argument("HighFloat value: Received value outside of range: " + std::to_string(value));
@@ -188,7 +188,7 @@ struct Pixel {
 
   void writeToArray(int paramIndex, sf::Uint8 * updateArray, int itemSize) {
 
-    if (paramIndex > itemSize) {
+    if (paramIndex >= itemSize) {
       throw std::invalid_argument("Error, attempted to write pixel to out of bounds area.");
     }
 
