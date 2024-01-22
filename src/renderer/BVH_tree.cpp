@@ -87,12 +87,19 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
     }
   }
 
+  //now, we check to see if any of the leaves of this node can be put into a bounding
+  //volume, freeing up space for our new node.
+
+  //first, we find all of the leaf nodes, and construct a octMap for them, mapping
+  //their octant to the map
   std::unordered_map<int, std::vector<BVHTreeNode*>> leafOctMap;
   for (int i = 0; i < childBoxIndexes.size(); i++) {
     int testedOctant = getBoxOctant(newBox, node->getChild(childBoxIndexes[i])->getPos());
     leafOctMap[testedOctant].push_back(node->getChild(childBoxIndexes[i]));
   }
 
+  //now, we try to find a set of leaves that can be collapsed into their own bounding
+  //volume node, freeing up space for our new node
   for (auto const& x : leafOctMap) {
     if (x.second.size() > 1) {
       Pixel newAddress = _memoryBuffer.newItem();

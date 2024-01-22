@@ -21,8 +21,8 @@ public:
     }
   }
 
-  bool isModel() {
-    return _isModel;
+  bool isPrimative() {
+    return _isPrimative;
   }
 
   void setAddress(Pixel address) {
@@ -84,10 +84,9 @@ public:
     return _BVHTreeNode;
   }
 
-  void setModel(std::string modelId) {
-    _isModel = true;
-    _modelId = modelId;
-    _params[0].toIBool(_isModel, _objectId);
+  void setPrimative(bool isPrimative) {
+    _isPrimative = isPrimative;
+    _params[0].toIBool(_isPrimative, _objectId);
   }
 
   void setPos(sf::Glsl::Vec3 pos) {
@@ -174,7 +173,7 @@ protected:
   bool _destroyed = false;
 
   int _objectId;
-  bool _isModel = false;
+  bool _isPrimative = false;
   std::string _modelId;
 
 
@@ -193,7 +192,7 @@ protected:
 
   void setObjectId(int id) {
     _objectId = id;
-    _params[0].toIBool(_isModel, _objectId);
+    _params[0].toIBool(_isPrimative, _objectId);
   }
 
   Pixel _address;
@@ -208,11 +207,12 @@ public:
 
   Sphere() : Shape() {
     this->setObjectId(0);
+    this->setPrimative(true);
   }
 
   void setRadius(double radius) {
     _radius = radius;
-    this->_params[28].toNum(_radius);
+    this->_params[32].toNum(_radius);
     this->setBoundRadius(_radius);
   }
 private:

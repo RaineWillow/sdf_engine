@@ -22,21 +22,25 @@ uniform sampler2D BVHUnion;
 uniform vec2 BVHUnionBufferResolution;
 uniform int BVHUnionItemSize;
 
-const int MAX_MARCHING_STEPS = 50;
+const int MAX_MARCHING_STEPS = 100;
 
 int maxIterations = 1024;
 
 
 int numShapeTests = 0;
 
+struct Material {
+  vec3 col;
+};
+
 struct Surface {
   float sd;
-  vec3 col;
+  Material mat;
 };
 
 struct Ray {
   float sd;
-  vec3 col;
+  Material mat;
   bool hit;
   int id;
   bool altColor;
@@ -183,8 +187,8 @@ Pointer convertPixToPointer(vec4 pixel) {
 //end------------------------------------------------------------------------------
 
 //surface distance functions-------------------------------------------------------
-Surface sdSphere(vec3 p, float r, vec3 col) {
-  return Surface(length(p) - r, col);
+Surface sdSphere(vec3 p, float r, Material mat) {
+  return Surface(length(p) - r, mat);
 }
 //end------------------------------------------------------------------------------
 
@@ -258,15 +262,19 @@ void clearBVHStack() {
 }
 //end------------------------------------------------------------------------------
 
+//Ray drawPrimative(vec3 p, float prec, int index);
+
+//<- insertion point for all ShapeComposites
+
 Ray drawObject(vec3 p, float prec, int index) {
 
   iBool objectId = convertPixToIBool(accessShapeParameter(index, 0));
   if (objectId.val == 0) {
     vec3 objPos = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
-    float objectRadius = convertPixToNum(accessShapeParameter(index, 28));
-    vec3 objectCol = convertPixToCol(accessShapeParameter(index, 13));
-    Surface obj = sdSphere(transform(p, objPos), objectRadius, objectCol);
-    return Ray(obj.sd, obj.col, obj.sd <= prec, index, false, 0);
+    float objectRadius = convertPixToNum(accessShapeParameter(index, 32));
+    Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 13)));
+    Surface obj = sdSphere(transform(p, objPos), objectRadius, objectMat);
+    return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
   }
 }
 
@@ -280,18 +288,9 @@ vec3 calcNormal(vec3 p, float prec, int index) {
     );
 }
 
-vec3 calcFloorNormal(vec3 p, vec3 b) {
-    vec2 e = vec2(1.0, -1.0) * 0.0005; // epsilon
-    return normalize(
-      e.xyy * sdAxisBox(p + e.xyy, b) +
-      e.yyx * sdAxisBox(p + e.yyx, b) +
-      e.yxy * sdAxisBox(p + e.yxy, b) +
-      e.xxx * sdAxisBox(p + e.xxx, b)
-    );
-}
-
 Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
-  Ray closest = Ray(boundRadius, backgroundColor, false, -1, false, 0);
+  Material defaultColor = Material(backgroundColor);
+  Ray closest = Ray(boundRadius, defaultColor, false, -1, false, 0);
   vec3 p = ro;
   float newI = 0.0;
 
@@ -348,7 +347,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       vec2 intersectionPoints = sphIntersect(p, rd, objPos, objectRadius);
       if (intersectionPoints.y != -1) {
         float maxDist = intersectionPoints.y;
-        Ray nextClosest = Ray(boundRadius, backgroundColor, false, -1, false, 0);
+        Ray nextClosest = Ray(boundRadius, defaultColor, false, -1, false, 0);
         float depth = intersectionPoints.x;
         for (int j = 0; j < MAX_MARCHING_STEPS; j++) {
           nextClosest = rayUnion(nextClosest, drawObject(p+depth*rd, 0.01, i));
@@ -369,49 +368,17 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
     }
   }
 
-  Ray floorRay = Ray(boundRadius, backgroundColor, false, -1, false, 0);
-  float secondDepth = 0.;
-  for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-    vec3 q = p+secondDepth*rd;
-    floorRay.sd = min(floorRay.sd, sdAxisBox(transform(p+secondDepth*rd, vec3(0.0, -10, 0.0)), vec3(512.0, 1.0, 512.0)));
-    floorRay.hit = floorRay.sd < 0.01;
-    floorRay.col = vec3(1. + 0.7*mod(floor(q.x) + floor(q.z), 2.0));
-    if (floorRay.hit || secondDepth >= boundRadius) {
-      break;
-    } else {
-      secondDepth += floorRay.sd;
-    }
-  }
-
-  vec3 normal;
-  if (floorRay.hit && closest.hit) {
-    if (secondDepth < lastDepth) {
-      lastDepth = secondDepth;
-      closest = floorRay;
-      p = p+lastDepth*rd;
-      normal = calcFloorNormal(transform(p, vec3(0.0, -10, 0.0)), vec3(512.0, 1.0, 512.0));
-    } else {
-      p = p+lastDepth*rd;
-      normal = calcNormal(p, 0.01, closest.id);
-    }
-  } else if (closest.hit) {
-    p = p+lastDepth*rd;
-    normal = calcNormal(p, 0.01, closest.id);
-  } else if (floorRay.hit) {
-    lastDepth = secondDepth;
-    closest = floorRay;
-    p = p+lastDepth*rd;
-    normal = calcFloorNormal(transform(p, vec3(0.0, -10, 0.0)), vec3(512.0, 1.0, 512.0));
-  }
+  p = p+lastDepth*rd;
+  vec3 normal = calcNormal(p, 0.01, closest.id);
 
   if (closest.hit) {
     vec3 lightPosition = ro;
     vec3 lightDirection = normalize(lightPosition-p);
     float dif = clamp(dot(normal, lightDirection), 0.1, 1.);
-    closest.col*=dif;
+    closest.mat.col*=dif;
   } else {
     if (!closest.altColor) {
-      closest.col = backgroundColor;
+      closest.mat.col = backgroundColor;
     }
   }
 
@@ -437,7 +404,7 @@ void main() {
 
 
   Ray result = rayMarch(ro, rd, 1024., backgroundColor);
-  col = result.col;
+  col = result.mat.col;
   if (result.hit) {
     col = pow(col, vec3(0.7));
   }
