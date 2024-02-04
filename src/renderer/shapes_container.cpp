@@ -1,7 +1,7 @@
 #include "shapes_container.hpp"
 
-ShapesContainer::ShapesContainer(int memoryBufferId) : _memoryBuffer(150, 7200, 48, memoryBufferId) {
-  _writeBuffer = new sf::Uint8[48*4];
+ShapesContainer::ShapesContainer(int memoryBufferId) : _memoryBuffer(150, 7200, 52, memoryBufferId) {
+  _writeBuffer = new sf::Uint8[52*4];
 }
 
 ShapesContainer::~ShapesContainer() {

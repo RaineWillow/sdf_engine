@@ -9,16 +9,15 @@ ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSiz
     _memoryBuffer.create(_memoryBufferResolutionX, _memoryBufferResolutionY);
     _memoryBuffer.setSmooth(false);
 
-    for (int i = _memoryBufferResolutionX*_memoryBufferResolutionY-1; i>=0; i--) {
+    for (int i = _itemsPerRow*_memoryBufferResolutionY-1; i>=0; i--) {
       _freeIndices.push_back(i);
     }
-    _id = id;
 
-    _writeArray = new sf::Uint8[_memoryBufferResolutionX*_memoryBufferResolutionY*4];
+    _id = id;
 }
 
 ShaderMemoryBuffer::~ShaderMemoryBuffer() {
-  delete[] _writeArray;
+  std::cout << "CALLED!" << std::endl;
 }
 
 Pixel ShaderMemoryBuffer::newItem() {

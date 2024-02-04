@@ -47,7 +47,10 @@ struct Ray {
   int numShapeTests;
 };
 
-
+struct AABB {
+  vec3 pos;
+  vec3 bound;
+};
 
 vec3 transform(vec3 p, vec3 q) {
   return p-q;
@@ -230,11 +233,6 @@ float sdAxisBox( vec3 p, vec3 b )
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
-struct AABB {
-  vec3 pos;
-  vec3 bound;
-};
-
 AABB getBoundingBoxFromPointer(Pointer item) {
   if (item.type == 2) {
     vec3 boxPos = vec3(
@@ -276,6 +274,12 @@ struct BVHStackFrame {
   int children[8];
   int remainingChildren;
   bool processed;
+};
+
+struct OrganizerFrame {
+  int next;
+  float dist;
+  int child;
 };
 
 const int maxStackSize = 50;
@@ -337,7 +341,9 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
 
   float lastDepth = boundRadius;
 
-  while (itemsOnBVHStack > 0 && closest.hit) {
+  vec3 m = 1.0/rd;
+
+  while (itemsOnBVHStack > 0 && !closest.hit) {
     int pointerPosition = itemsOnBVHStack-1;
     Pointer currentItem = BVHStack[pointerPosition].currentAddress;
 
@@ -363,6 +369,51 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       );
 
       if (boxIntersection(transform(p, boxPos), rd, boxSize).y != -1) {
+        OrganizerFrame data[8];
+        int closestPos = 0;
+        int numChildren = 0;
+
+        for (int i = 0; i < 8; i++) {
+          Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
+          if (currentChild.type != 0) {
+            AABB currentBound = getBoundingBoxFromPointer(currentChild);
+            float dist = sdAxisBox(transform(p, currentBound.pos), currentBound.bound);
+            int foundPos = closestPos;
+            data[numChildren] = OrganizerFrame(-1, dist, 7+i);
+            int nextClosest = closestPos;
+            for (int i = 0; i < numChildren; i++) {
+              if (data[closestPos].dist >= dist) {
+                data[numChildren].next = closestPos;
+                closestPos = numChildren;
+                break;
+              }
+              
+              if (data[nextClosest].dist <= dist) {
+                if (data[nextClosest].next == -1) {
+                  data[nextClosest].next=numChildren;
+                  break;
+                } else if (data[data[nextClosest].next].dist >= dist) {
+                  data[numChildren].next = data[nextClosest].next;
+                  data[nextClosest].next = numChildren;
+                  break;
+                } else {
+                  nextClosest = data[nextClosest].next;
+                }
+              }
+              
+            }
+            numChildren+=1;
+          }
+        }
+
+        BVHStack[pointerPosition].remainingChildren = numChildren;
+        int nextClosest = closestPos;
+        for (int i = 0; i < numChildren; i++) {
+          int currentChild = data[nextClosest].child;
+          BVHStack[pointerPosition].children[numChildren-1-i] = currentChild;
+          nextClosest = data[nextClosest].next;
+        }
+/*
         for (int i = 0; i < 8; i++) {
           Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
           if (currentChild.type != 0) {
@@ -370,7 +421,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
             BVHStack[pointerPosition].remainingChildren += 1;
           }
         }
-
+*/
         BVHStack[pointerPosition].processed=true;
       } else {
         popBVHStackFrame();
@@ -380,19 +431,19 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
       vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
       vec2 intersectionPoints = boxIntersection(transform(p, objPos), rd, objBound);
-      float depth = max(intersectionPoints.x, 0.0);
-      if (intersectionPoints.y != -1 && (lastDepth >= depth)) {
+      float depth = max(intersectionPoints.x, 0);
+      if (intersectionPoints.y != -1 && lastDepth >= depth) {
         float maxDist = intersectionPoints.y;
         Ray nextClosest = Ray(boundRadius, defaultColor, false, -1, false, 0);
         for (int j = 0; j < MAX_MARCHING_STEPS; j++) {
           nextClosest = rayUnion(nextClosest, drawObject(p+depth*rd, 0.01, i));
-          if (nextClosest.hit) {
+          if (depth >= maxDist || nextClosest.sd < 0.0) {
+            break;
+          } else if (nextClosest.hit) {
             if (depth < lastDepth) {
               closest = nextClosest;
               lastDepth = depth;
             }
-            break;
-          } else if (depth >= maxDist) {
             break;
           } else {
             depth += nextClosest.sd;
@@ -402,9 +453,8 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       popBVHStackFrame();
     }
   }
-
   
-
+  
   if (closest.hit) {
     p = p+lastDepth*rd;
     vec3 normal = calcNormal(p, 0.01, closest.id);

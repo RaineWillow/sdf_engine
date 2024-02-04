@@ -38,7 +38,7 @@ void Renderer::addShape(Shape * shape) {
   _marcher.setUniform("numObjects", numShapes);
   _BVHUnion.addLeaf(shape->getAddress(), shape->getPos(), shape->getBound());
   //std::cout << numShapes << std::endl;
-  //std::cout << _BVHUnion.drawTree() << std::endl;
+  std::cout << _BVHUnion.drawTree() << std::endl;
 }
 
 void Renderer::destroyShape(Shape * shape) {

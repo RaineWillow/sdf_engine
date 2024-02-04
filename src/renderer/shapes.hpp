@@ -15,10 +15,11 @@ class Shape {
 public:
 
   Shape() {
-    for (int i = 0; i < 48; i++) {
+    for (int i = 0; i < 52; i++) {
       Pixel defaultParam;
       _params.push_back(defaultParam);
     }
+    setK(0);
   }
 
   bool isPrimative() {
@@ -33,8 +34,8 @@ public:
     return _address;
   }
 
-  std::string getModelId() {
-    return _modelId;
+  float getK() {
+    return _K;
   }
 
   sf::Glsl::Vec3 getPos() {
@@ -89,6 +90,11 @@ public:
     _params[0].toIBool(_isPrimative, _objectId);
   }
 
+  void setK(float K) {
+    _K = K;
+    _params[1].toHighFloat(_K);
+  }
+
   void setPos(sf::Glsl::Vec3 pos) {
     _pos = pos;
     _params[2].toNum(_pos.x);
@@ -105,7 +111,7 @@ public:
   }
 
   void setBoundRadius(double radius) {
-    _boundRadius = radius+0.5;
+    _boundRadius = radius + 0.01;
     _params[9].toNum(_boundRadius);
     setBound(sf::Glsl::Vec3(_boundRadius, _boundRadius, _boundRadius));
   }
@@ -164,9 +170,13 @@ public:
     _BVHTreeNode = node;
   }
 
+  bool inBVHTree() {
+    return _BVHTreeNode != NULL;
+  }
+
   void updateParams(sf::Uint8 * dataArray) {
     for (int i = 0; i < _params.size(); i++) {
-      _params[i].writeToArray(i, dataArray, 48);
+      _params[i].writeToArray(i, dataArray, 52);
     }
   }
 protected:
@@ -174,9 +184,8 @@ protected:
 
   int _objectId;
   bool _isPrimative = false;
-  std::string _modelId;
 
-
+  float _K; 
   sf::Glsl::Vec3 _pos;
   sf::Glsl::Vec4 _qRot;
   double _boundRadius = 0.0;
@@ -212,7 +221,7 @@ public:
 
   void setRadius(double radius) {
     _radius = radius;
-    this->_params[32].toNum(_radius);
+    this->_params[35].toNum(_radius);
     this->setBoundRadius(_radius);
   }
 private:

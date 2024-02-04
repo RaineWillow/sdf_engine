@@ -31,8 +31,6 @@ private:
     int _memoryBufferResolutionY;
     sf::Texture _memoryBuffer;
 
-    sf::Uint8 * _writeArray;
-
     std::vector<int> _freeIndices;
 };
 

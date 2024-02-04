@@ -23,7 +23,9 @@ public:
 
   void update();
   const sf::Texture & render();
+
 private:
+
   int _width;
   int _height;
   sf::Shader _marcher;
