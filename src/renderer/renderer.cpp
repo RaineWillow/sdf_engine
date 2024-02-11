@@ -34,14 +34,20 @@ Renderer::~Renderer() {
 
 void Renderer::addShape(Shape * shape) {
   _shapesContainer.addShape(shape);
-  numShapes+=1;
-  _marcher.setUniform("numObjects", numShapes);
-  _BVHUnion.addLeaf(shape->getAddress(), shape->getPos(), shape->getBound());
+  shape->setBVHTreeNode(_BVHUnion.addLeaf(shape->getAddress(), shape->getPos(), shape->getBound()));
   //std::cout << numShapes << std::endl;
   std::cout << _BVHUnion.drawTree() << std::endl;
 }
 
 void Renderer::destroyShape(Shape * shape) {
+  _shapesContainer.destroyShape(shape);
+  _BVHUnion.destroyNode(shape->getBVHTreeNode());
+  std::cout << _BVHUnion.drawTree() << std::endl;
+}
+
+void Renderer::updateShape(Shape * shape) {
+  _shapesContainer.updateShape(shape);
+  _BVHUnion.updateNode(shape->getBVHTreeNode());
 }
 
 void Renderer::update() {

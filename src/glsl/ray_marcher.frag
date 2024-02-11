@@ -22,7 +22,7 @@ uniform sampler2D BVHUnion;
 uniform vec2 BVHUnionBufferResolution;
 uniform int BVHUnionItemSize;
 
-const int MAX_MARCHING_STEPS = 10;
+const int MAX_MARCHING_STEPS = 40;
 
 
 int maxIterations = 1024;
@@ -196,6 +196,15 @@ vec3 convertPixToCol(vec4 pixel) {
   return pixel.rgb;
 }
 
+vec4 convertPixToFDat(vec4 pixel) {
+  int set0 = int(pixel.r*255.0);
+  int set1 = int(pixel.g*255.0);
+  int set2 = int(pixel.b*255.0);
+  int set3 = int(pixel.a*255.0);
+
+  return vec4(set0, set1, set2, set3);
+}
+
 Pointer convertPixToPointer(vec4 pixel) {
   int set0 = int(pixel.r*255.0);
   int set1 = int(pixel.g*255.0);
@@ -348,7 +357,7 @@ Ray drawObject(vec3 p, float prec, int index) {
   iBool objectId = convertPixToIBool(accessShapeParameter(index, 0));
   if (objectId.val == 0) {
     vec3 objPos = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
-    float objectRadius = convertPixToNum(accessShapeParameter(index, 32));
+    float objectRadius = convertPixToNum(accessShapeParameter(index, 35));
     Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 13)));
     Surface obj = sdSphere(transform(p, objPos), objectRadius, objectMat);
     return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
@@ -528,8 +537,8 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
         float maxDist = intersectionPoints.y;
         Ray nextClosest = Ray(boundRadius, defaultColor, false, -1, false, 0);
         for (int j = 0; j < MAX_MARCHING_STEPS; j++) {
-          nextClosest = rayUnion(nextClosest, drawObject(p+depth*rd, 0.03, i));
-          if (depth >= maxDist) {
+          nextClosest = rayUnion(nextClosest, drawObject(p+depth*rd, 0.01, i));
+          if (depth >= maxDist || depth >= lastDepth) {
             break;
           } else if (nextClosest.hit) {
             if (depth < lastDepth) {

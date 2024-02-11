@@ -8,6 +8,8 @@
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
+#include <string>
+#include <iostream>
 #include "axis_aligned_bounding_box.hpp"
 #include "memory/memory_pixel.hpp"
 #include "memory/shader_memory_buffer.hpp"

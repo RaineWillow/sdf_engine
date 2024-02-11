@@ -337,7 +337,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
 
   float lastDepth = boundRadius;
 
-  while (itemsOnBVHStack > 0 && closest.hit) {
+  while (itemsOnBVHStack > 0 && !closest.hit) {
     int pointerPosition = itemsOnBVHStack-1;
     Pointer currentItem = BVHStack[pointerPosition].currentAddress;
 

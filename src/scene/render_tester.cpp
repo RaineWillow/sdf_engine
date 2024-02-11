@@ -25,7 +25,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 150;
-  for (int i = 0; i < 4000; i++) {
+  for (int i = 0; i < 100; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = (rand() % rangeZ);
@@ -38,7 +38,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   }
 
   Sphere * finalSphere = new Sphere();
-  finalSphere->setPos(sf::Glsl::Vec3(5, -1, -50));
+  finalSphere->setPos(sf::Glsl::Vec3(5, -1, -1));
   finalSphere->setRadius(0.8);
   finalSphere->setAmbient(sf::Glsl::Vec3(1.0, 1.0, 0.0));
   state->rayMarcher.addShape(finalSphere);
@@ -75,6 +75,10 @@ void RenderTester::handleController() {
 
 void RenderTester::update(sf::RenderWindow * window) {
   testSphereOffset += state->deltaTime.asSeconds();
+
+
+  testSphere2->setPos(sf::Glsl::Vec3(std::sin(testSphereOffset)/2.0+1.5, 0, 0));
+  state->rayMarcher.updateShape(testSphere2);
   //state->rayMarcher.update();
 }
 

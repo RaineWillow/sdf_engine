@@ -17,6 +17,10 @@ struct AxisAlignedBoundingBox {
   
   sf::Glsl::Vec3 pos;
   sf::Glsl::Vec3 bound;
+
+  bool operator==(const AxisAlignedBoundingBox& rhs) const {
+    return (pos.x==rhs.pos.x && pos.y==rhs.pos.y && pos.z==rhs.pos.z) && (bound.x==rhs.bound.x && bound.y==rhs.bound.y && bound.z==rhs.bound.z);
+  }
 };
 
 inline AxisAlignedBoundingBox fromMinMax(sf::Glsl::Vec3 minVals, sf::Glsl::Vec3 maxVals) {
@@ -63,6 +67,16 @@ inline int getBoxOctant(AxisAlignedBoundingBox container, sf::Glsl::Vec3 point) 
   }
 
   return data;
+}
+
+inline bool boundedByBox(AxisAlignedBoundingBox container, AxisAlignedBoundingBox tester) {
+  sf::Glsl::Vec3 minValsContainer(container.pos.x-container.bound.x, container.pos.y-container.bound.y, container.pos.z-container.bound.z);
+  sf::Glsl::Vec3 maxValsContainer(container.pos.x+container.bound.x, container.pos.y+container.bound.y, container.pos.z+container.bound.z);
+  sf::Glsl::Vec3 minValsTester(tester.pos.x-tester.bound.x, tester.pos.y-tester.bound.y, tester.pos.z-tester.bound.z);
+  sf::Glsl::Vec3 maxValsTester(tester.pos.x+tester.bound.x, tester.pos.y+tester.bound.y, tester.pos.z+tester.bound.z);
+
+  return (minValsTester.x >= minValsContainer.x && minValsTester.y >= minValsContainer.y && minValsTester.z >= minValsContainer.z) 
+    && (maxValsTester.x <= maxValsContainer.x && maxValsTester.y <= maxValsContainer.y && maxValsTester.z <= maxValsContainer.z);
 }
 
 #endif

@@ -24,6 +24,8 @@ public:
 
   void bind(sf::Shader & shader, std::string bufferName);
 
+  AxisAlignedBoundingBox resizeNodeFromChildren(BVHTreeNode * node);
+
   void addItemFromNode(BVHTreeNode * node, BVHTreeNode * item);
   void addItemToRoot(BVHTreeNode * item);
   void destroyNode(BVHTreeNode * node);

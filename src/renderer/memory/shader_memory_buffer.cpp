@@ -17,7 +17,6 @@ ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSiz
 }
 
 ShaderMemoryBuffer::~ShaderMemoryBuffer() {
-  std::cout << "CALLED!" << std::endl;
 }
 
 Pixel ShaderMemoryBuffer::newItem() {

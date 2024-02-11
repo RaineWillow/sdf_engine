@@ -161,6 +161,19 @@ struct Pixel {
     a = color.w*255;
   }
 
+  void to4Dat(int dat0, int dat1, int dat2, int dat3) {
+    if (dat0 > 255 || dat1 > 255 || dat2 > 255 || dat3 > 255) {
+      throw std::invalid_argument("Error, attempted to write a 4Dat which had values greater than 255");
+    } else if (dat0 < 0 || dat1 < 0 || dat2 < 0 || dat3 < 0) {
+      throw std::invalid_argument("Error, attempted to write a 4Dat with values less than zero!");
+    }
+
+    r = dat0;
+    g = dat1;
+    b = dat2;
+    a = dat3;
+  }
+
   void toPointer(int pointerIndex, int type) {
     if (pointerIndex > 16777215) {
       throw std::invalid_argument("Error, attempted to write pointer " + std::to_string(pointerIndex) + ", which is out of range.");
