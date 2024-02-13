@@ -26,6 +26,8 @@ public:
 
   void bind(sf::Shader & shader, std::string bufferName);
 
+  void update();
+
   void render(sf::RenderTexture & renderTarget);
 private:
   ShaderMemoryBuffer _memoryBuffer;

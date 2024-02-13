@@ -1,11 +1,11 @@
 #include "shapes_container.hpp"
 
 ShapesContainer::ShapesContainer(int memoryBufferId) : _memoryBuffer(150, 7200, 52, memoryBufferId) {
-  _writeBuffer = new sf::Uint8[52*4];
+  //_writeBuffer = new sf::Uint8[52*4];
 }
 
 ShapesContainer::~ShapesContainer() {
-  delete[] _writeBuffer;
+  //delete[] _writeBuffer;
 }
 
 void ShapesContainer::addShape(Shape * shape) {
@@ -26,6 +26,10 @@ void ShapesContainer::updateShape(Shape * shape) {
 
 void ShapesContainer::bind(sf::Shader & shader, std::string bufferName) {
   _memoryBuffer.bind(shader, bufferName);
+}
+
+void ShapesContainer::update() {
+  _memoryBuffer.update();
 }
 
 void ShapesContainer::render(sf::RenderTexture & renderTarget) {

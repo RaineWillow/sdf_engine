@@ -36,21 +36,25 @@ void Renderer::addShape(Shape * shape) {
   _shapesContainer.addShape(shape);
   shape->setBVHTreeNode(_BVHUnion.addLeaf(shape->getAddress(), shape->getPos(), shape->getBound()));
   //std::cout << numShapes << std::endl;
-  std::cout << _BVHUnion.drawTree() << std::endl;
+  //std::cout << _BVHUnion.drawTree() << std::endl;
 }
 
 void Renderer::destroyShape(Shape * shape) {
   _shapesContainer.destroyShape(shape);
   _BVHUnion.destroyNode(shape->getBVHTreeNode());
-  std::cout << _BVHUnion.drawTree() << std::endl;
+  //std::cout << _BVHUnion.drawTree() << std::endl;
 }
 
 void Renderer::updateShape(Shape * shape) {
+  
   _shapesContainer.updateShape(shape);
-  _BVHUnion.updateNode(shape->getBVHTreeNode());
+  _BVHUnion.updateLeaf(shape->getBVHTreeNode(), shape->getPos(), shape->getBound());
+  //std::cout << _BVHUnion.drawTree() << std::endl;
 }
 
 void Renderer::update() {
+  _shapesContainer.update();
+  _BVHUnion.update();
 }
 
 const sf::Texture & Renderer::render() {

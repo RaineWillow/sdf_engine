@@ -44,6 +44,12 @@ inline AxisAlignedBoundingBox addToBox(AxisAlignedBoundingBox container, AxisAli
   return retData;
 }
 
+inline bool pointInsideAABB(AxisAlignedBoundingBox container, sf::Glsl::Vec3 point) {
+  sf::Glsl::Vec3 minVals(container.pos.x-container.bound.x, container.pos.y-container.bound.y, container.pos.z-container.bound.z);
+  sf::Glsl::Vec3 maxVals(container.pos.x+container.bound.x, container.pos.y+container.bound.y, container.pos.z+container.bound.z);
+  return !(point.x < minVals.x || point.x > maxVals.x || point.y < minVals.y || point.y > maxVals.y || point.z < minVals.z || point.z > maxVals.z);
+}
+
 inline int getBoxOctant(AxisAlignedBoundingBox container, sf::Glsl::Vec3 point) {
   sf::Glsl::Vec3 minVals(container.pos.x-container.bound.x, container.pos.y-container.bound.y, container.pos.z-container.bound.z);
   sf::Glsl::Vec3 maxVals(container.pos.x+container.bound.x, container.pos.y+container.bound.y, container.pos.z+container.bound.z);

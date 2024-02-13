@@ -22,6 +22,12 @@ public:
     }
     setK(0);
     _center = sf::Glsl::Vec3(0, 0, 0);
+
+    _writeData = new sf::Uint8[52*4];
+  }
+
+  ~Shape() {
+    delete[] _writeData;
   }
 
   bool isPrimative() {
@@ -180,10 +186,11 @@ public:
     setPos(sf::Glsl::Vec3(_pos.x+bound.pos.x, _pos.y+bound.pos.y, _pos.z+bound.pos.z));
   }
 
-  void updateParams(sf::Uint8 * dataArray) {
+  void updateParams(sf::Uint8 * &dataArray) {
     for (int i = 0; i < _params.size(); i++) {
-      _params[i].writeToArray(i, dataArray, 52);
+      _params[i].writeToArray(i, _writeData, 52);
     }
+    dataArray = _writeData;
   }
 protected:
   bool _destroyed = false;
@@ -198,6 +205,8 @@ protected:
   sf::Glsl::Vec3 _aColor;
   sf::Glsl::Vec3 _dColor;
   sf::Glsl::Vec3 _sColor;
+
+  sf::Uint8 * _writeData;
 
   double _shine;
   double _opacity;

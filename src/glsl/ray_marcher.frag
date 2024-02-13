@@ -457,6 +457,8 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
   
   int numIterations = 0;
 
+  int numHits = 0;
+
   float lastDepth = boundRadius;
   
 
@@ -483,6 +485,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
         if (currentChild.type != 0) {
           AABB currentBound = getBoundingBoxFromPointer(currentChild);
           if (boxIntersectionPrecomupute(p-currentBound.pos, rd, currentBound.bound, m).y != -1.0) {
+            numHits += 1;
             float dist;
             if (currentChild.type == 1) {
               dist = drawObject(p, 0.01, currentChild.address).sd;
@@ -558,7 +561,6 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
   clearBVHStack();
 
   
-
   if (closest.hit) {
     p = p+lastDepth*rd;
     //vec3 normal = calcNormalPrecise(p, boundRadius);
@@ -572,7 +574,24 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       closest.mat.col = backgroundColor;
     }
   }
+/*
+  if (numHits > 0) {
 
+    vec3 colors[10];
+
+    colors[0] = vec3(1, 0, 0);
+    colors[1] = vec3(0, 1, 0);
+    colors[2] = vec3(0, 0, 1);
+    colors[3] = vec3(1, 1, 0);
+    colors[4] = vec3(1, 0, 1);
+    colors[5] = vec3(0, 1, 1);
+    colors[6] = vec3(0.9, 0.7, 0.2);
+    colors[7] = vec3(0.2, 0.9, 0.7);
+    colors[8] = vec3(0.7, 0.9, 0.2);
+    colors[9] = vec3(0.7, 0.2, 0.9);
+    closest.mat.col = mix(closest.mat.col, colors[mod(numHits, 10)], 0.8);
+  }
+  */
   //float shapesTested = float(closest.numShapeTests)/200.0;
 
   //vec3 red = vec3(1.0, 0.0, 0.0);

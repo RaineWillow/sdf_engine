@@ -11,6 +11,11 @@ BVHTreeNode::BVHTreeNode(bool isLeaf, bool isRoot, Pixel address) {
 
   _pos = sf::Glsl::Vec3(0, 0, 0);
   _bound = sf::Glsl::Vec3(0, 0, 0);
+  _writeData = new sf::Uint8[15*4];
+}
+
+BVHTreeNode::~BVHTreeNode() {
+  delete[] _writeData;
 }
 
 sf::Glsl::Vec3 BVHTreeNode::getPos() {
@@ -127,14 +132,15 @@ void BVHTreeNode::removeChild(size_t childIndex) {
   _children[childIndex]->setParent(NULL, 0);
   _children[childIndex] = NULL;
   _params[7+childIndex].toPointer(0, 0);
-  _hasChildren = false;
   for (int i = 0; i < 8; i++) {
-    _hasChildren = hasChild(i);
-    if (_hasChildren) {
+    if (hasChild(i)) {
+      _hasChildren=true;
       break;
+    } else {
+      _hasChildren=false;
     }
   }
-
+  
   
   _params[0].toBool(_hasChildren);
 }
@@ -148,10 +154,14 @@ void BVHTreeNode::setParent(BVHTreeNode * parent, size_t parentIndex) {
   _parentIndex = parentIndex;
 }
 
-void BVHTreeNode::updateParams(sf::Uint8 * dataArray) {
+void BVHTreeNode::updateParams(sf::Uint8 * &dataArray) {
+  
   for (int i = 0; i < _params.size(); i++) {
-    _params[i].writeToArray(i, dataArray, 15);
+    _params[i].writeToArray(i, _writeData, 15);
   }
+
+  
+  dataArray = _writeData;
 }
 
 void BVHTreeNode::destroyAllChildren() {
