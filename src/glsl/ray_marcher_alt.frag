@@ -22,8 +22,7 @@ uniform sampler2D BVHUnion;
 uniform vec2 BVHUnionBufferResolution;
 uniform int BVHUnionItemSize;
 
-const int MAX_MARCHING_STEPS = 40;
-
+const int MAX_MARCHING_STEPS = 100;
 
 int maxIterations = 1024;
 
@@ -48,32 +47,15 @@ struct Ray {
   int numShapeTests;
 };
 
-
+struct AABB {
+  vec3 pos;
+  vec3 bound;
+};
 
 vec3 transform(vec3 p, vec3 q) {
   return p-q;
 }
 
-float fastLength(vec3 vec) {
-  float x = dot(vec, vec);
-  uint i;
-  float x2, y;
-    
-  x2 = x*.5;
-  y = x;
-  i = floatBitsToUint(x);       // evil floating point bit hack
-  i = 0x5f3759dfu - ( i >> 1);  // wut
-  y = uintBitsToFloat(i);
-  y = y*(1.5 - (x2 * y * y));   // 1st iteration
-//  y = y*(1.5 - (x2 * y * y));   // 2nd iteration, can be removed
-  return 1/y;
-}
-
-/*
-float fastLength(vec3 vec) {
-  return length(vec);
-}
-*/
 //memory access functions----------------------------------------------------------
 vec4 accessMemoryParameter(sampler2D inBuffer, int index, int parameter, vec2 bufferResolution, int itemSize) {
   int maxIndexPerRow = int(bufferResolution.x/float(itemSize));
@@ -196,15 +178,6 @@ vec3 convertPixToCol(vec4 pixel) {
   return pixel.rgb;
 }
 
-vec4 convertPixToFDat(vec4 pixel) {
-  int set0 = int(pixel.r*255.0);
-  int set1 = int(pixel.g*255.0);
-  int set2 = int(pixel.b*255.0);
-  int set3 = int(pixel.a*255.0);
-
-  return vec4(set0, set1, set2, set3);
-}
-
 Pointer convertPixToPointer(vec4 pixel) {
   int set0 = int(pixel.r*255.0);
   int set1 = int(pixel.g*255.0);
@@ -220,7 +193,7 @@ Pointer convertPixToPointer(vec4 pixel) {
 
 //surface distance functions-------------------------------------------------------
 Surface sdSphere(vec3 p, float r, Material mat) {
-  return Surface(fastLength(p) - r, mat);
+  return Surface(length(p) - r, mat);
 }
 //end------------------------------------------------------------------------------
 
@@ -254,28 +227,11 @@ vec2 boxIntersection( in vec3 ro, in vec3 rd, vec3 boxSize)
     return vec2( tN, tF );
 }
 
-vec2 boxIntersectionPrecomupute( in vec3 ro, in vec3 rd, vec3 boxSize, vec3 m) 
-{
-    vec3 n = m*ro;   // can precompute if traversing a set of aligned boxes
-    vec3 k = abs(m)*boxSize;
-    vec3 t1 = -n - k;
-    vec3 t2 = -n + k;
-    float tN = max( max( t1.x, t1.y ), t1.z );
-    float tF = min( min( t2.x, t2.y ), t2.z );
-    if( tN>tF || tF<0.0) return vec2(-1.0); // no intersection
-    return vec2( tN, tF );
-}
-
 float sdAxisBox( vec3 p, vec3 b )
 {
   vec3 q = abs(p) - b;
-  return fastLength(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
-
-struct AABB {
-  vec3 pos;
-  vec3 bound;
-};
 
 AABB getBoundingBoxFromPointer(Pointer item) {
   if (item.type == 2) {
@@ -331,7 +287,6 @@ const int maxStackSize = 50;
 BVHStackFrame BVHStack[maxStackSize];
 int itemsOnBVHStack = 0;
 
-
 void pushBVHStackFrame(Pointer newItem) {
   if (itemsOnBVHStack < maxStackSize) {
     BVHStack[itemsOnBVHStack] = BVHStackFrame(newItem, int[8](0, 0, 0, 0, 0, 0, 0, 0), 0, false);
@@ -357,19 +312,38 @@ Ray drawObject(vec3 p, float prec, int index) {
   iBool objectId = convertPixToIBool(accessShapeParameter(index, 0));
   if (objectId.val == 0) {
     vec3 objPos = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
-    float objectRadius = convertPixToNum(accessShapeParameter(index, 35));
+    float objectRadius = convertPixToNum(accessShapeParameter(index, 32));
     Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 13)));
     Surface obj = sdSphere(transform(p, objPos), objectRadius, objectMat);
     return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
   }
 }
 
-float distFromPoint(vec3 p, float boundRadius) {
-  Pointer root = Pointer(0, 2);
+vec3 calcNormal(vec3 p, float prec, int index) {
+    vec2 e = vec2(1.0, -1.0) * 0.0005; // epsilon
+    return normalize(
+      e.xyy * drawObject(p + e.xyy, prec, index).sd +
+      e.yyx * drawObject(p + e.yyx, prec, index).sd +
+      e.yxy * drawObject(p + e.yxy, prec, index).sd +
+      e.xxx * drawObject(p + e.xxx, prec, index).sd
+    );
+}
 
+Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
+  Material defaultColor = Material(backgroundColor);
+  Ray closest = Ray(boundRadius, defaultColor, false, -1, false, 0);
+  vec3 p = ro;
+  float newI = 0.0;
+
+  Pointer root = Pointer(0, 2);
   pushBVHStackFrame(root);
-  float minDist = boundRadius;
-  while (itemsOnBVHStack > 0) {
+  int numIterations = 0;
+
+  float lastDepth = boundRadius;
+
+  vec3 m = 1.0/rd;
+
+  while (itemsOnBVHStack > 0 && !closest.hit) {
     int pointerPosition = itemsOnBVHStack-1;
     Pointer currentItem = BVHStack[pointerPosition].currentAddress;
 
@@ -394,104 +368,16 @@ float distFromPoint(vec3 p, float boundRadius) {
         convertPixToNum(accessBVHUnionParameter(currentItem.address, 6))
       );
 
-      float distToBox = sdAxisBox(p-boxPos, boxSize);
+      if (boxIntersection(transform(p, boxPos), rd, boxSize).y != -1) {
+        OrganizerFrame data[8];
+        int closestPos = 0;
+        int numChildren = 0;
 
-      if (distToBox < 0.5) {
         for (int i = 0; i < 8; i++) {
           Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
           if (currentChild.type != 0) {
-            BVHStack[pointerPosition].children[BVHStack[pointerPosition].remainingChildren] = 7+i;
-            BVHStack[pointerPosition].remainingChildren += 1;
-          }
-        }
-
-        BVHStack[pointerPosition].processed = true;
-      } else {
-        minDist = min(minDist, distToBox);
-
-        popBVHStackFrame();
-      }
-    } else if (currentItem.type == 1) {
-      minDist = min(minDist, drawObject(p, 0.01, currentItem.address).sd);
-      popBVHStackFrame();
-    }
-  }
-
-  clearBVHStack();
-
-  return minDist;
-}
-
-vec3 calcNormal(vec3 p, float prec, int index) {
-    vec2 e = vec2(1.0, -1.0) * 0.0005; // epsilon
-    return normalize(
-      e.xyy * drawObject(p + e.xyy, prec, index).sd +
-      e.yyx * drawObject(p + e.yyx, prec, index).sd +
-      e.yxy * drawObject(p + e.yxy, prec, index).sd +
-      e.xxx * drawObject(p + e.xxx, prec, index).sd
-    );
-}
-
-vec3 calcNormalPrecise(vec3 p, float boundRadius) {
-    vec2 e = vec2(1.0, -1.0) * 0.0005; // epsilon
-    return normalize(
-      e.xyy * distFromPoint(p + e.xyy, boundRadius) +
-      e.yyx * distFromPoint(p + e.yyx, boundRadius) +
-      e.yxy * distFromPoint(p + e.yxy, boundRadius) +
-      e.xxx * distFromPoint(p + e.xxx, boundRadius)
-    );
-}
-
-Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
-  Material defaultColor = Material(backgroundColor);
-  Ray closest = Ray(boundRadius, defaultColor, false, -1, false, 0);
-  vec3 p = ro;
-
-  vec3 m = 1.0/rd;
-
-  Pointer root = Pointer(0, 2);
-  AABB rootBound = getBoundingBoxFromPointer(root);
-  if (boxIntersectionPrecomupute(p-rootBound.pos, rd, rootBound.bound, m).y != -1.0) {
-    pushBVHStackFrame(root);
-  }
-  
-  int numIterations = 0;
-
-  int numHits = 0;
-
-  float lastDepth = boundRadius;
-  
-
-  while (itemsOnBVHStack > 0) {
-    int pointerPosition = itemsOnBVHStack-1;
-    Pointer currentItem = BVHStack[pointerPosition].currentAddress;
-
-    if (BVHStack[pointerPosition].processed) {
-      int remainingChildren = BVHStack[pointerPosition].remainingChildren;
-      if (remainingChildren > 0) {
-        Pointer nextChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, BVHStack[pointerPosition].children[remainingChildren-1]));
-        pushBVHStackFrame(nextChild);
-        BVHStack[pointerPosition].remainingChildren -= 1;
-      } else {
-        popBVHStackFrame();
-      }
-    } else if (currentItem.type == 2) {
-      OrganizerFrame data[8];
-      int closestPos = 0;
-      int numChildren = 0;
-
-      for (int i = 0; i < 8; i++) {
-        Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
-        if (currentChild.type != 0) {
-          AABB currentBound = getBoundingBoxFromPointer(currentChild);
-          if (boxIntersectionPrecomupute(p-currentBound.pos, rd, currentBound.bound, m).y != -1.0) {
-            numHits += 1;
-            float dist;
-            if (currentChild.type == 1) {
-              dist = drawObject(p, 0.01, currentChild.address).sd;
-            } else {
-              dist = sdAxisBox(p-currentBound.pos, currentBound.bound);
-            }
+            AABB currentBound = getBoundingBoxFromPointer(currentChild);
+            float dist = sdAxisBox(transform(p, currentBound.pos), currentBound.bound);
             int foundPos = closestPos;
             data[numChildren] = OrganizerFrame(-1, dist, 7+i);
             int nextClosest = closestPos;
@@ -519,29 +405,39 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
             numChildren+=1;
           }
         }
-      }
 
-      BVHStack[pointerPosition].remainingChildren = numChildren;
-      int nextClosest = closestPos;
-      for (int i = 0; i < numChildren; i++) {
-        int currentChild = data[nextClosest].child;
-        BVHStack[pointerPosition].children[numChildren-1-i] = currentChild;
-        nextClosest = data[nextClosest].next;
+        BVHStack[pointerPosition].remainingChildren = numChildren;
+        int nextClosest = closestPos;
+        for (int i = 0; i < numChildren; i++) {
+          int currentChild = data[nextClosest].child;
+          BVHStack[pointerPosition].children[numChildren-1-i] = currentChild;
+          nextClosest = data[nextClosest].next;
+        }
+/*
+        for (int i = 0; i < 8; i++) {
+          Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
+          if (currentChild.type != 0) {
+            BVHStack[pointerPosition].children[BVHStack[pointerPosition].remainingChildren] = 7+i;
+            BVHStack[pointerPosition].remainingChildren += 1;
+          }
+        }
+*/
+        BVHStack[pointerPosition].processed=true;
+      } else {
+        popBVHStackFrame();
       }
-
-      BVHStack[pointerPosition].processed=true;
     } else if (currentItem.type == 1) {
       int i = currentItem.address;
       vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
       vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
-      vec2 intersectionPoints = boxIntersectionPrecomupute(p - objPos, rd, objBound, m);
-      float depth = max(intersectionPoints.x, 0.0);
-      if (intersectionPoints.y != -1.0 && lastDepth > depth) {
+      vec2 intersectionPoints = boxIntersection(transform(p, objPos), rd, objBound);
+      float depth = max(intersectionPoints.x, 0);
+      if (intersectionPoints.y != -1 && lastDepth >= depth) {
         float maxDist = intersectionPoints.y;
         Ray nextClosest = Ray(boundRadius, defaultColor, false, -1, false, 0);
         for (int j = 0; j < MAX_MARCHING_STEPS; j++) {
           nextClosest = rayUnion(nextClosest, drawObject(p+depth*rd, 0.01, i));
-          if (depth >= maxDist || depth >= lastDepth) {
+          if (depth >= maxDist || nextClosest.sd < 0.0) {
             break;
           } else if (nextClosest.hit) {
             if (depth < lastDepth) {
@@ -557,13 +453,10 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       popBVHStackFrame();
     }
   }
-
-  clearBVHStack();
-
+  
   
   if (closest.hit) {
     p = p+lastDepth*rd;
-    //vec3 normal = calcNormalPrecise(p, boundRadius);
     vec3 normal = calcNormal(p, 0.01, closest.id);
     vec3 lightPosition = ro;
     vec3 lightDirection = normalize(lightPosition-p);
@@ -574,24 +467,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       closest.mat.col = backgroundColor;
     }
   }
-/*
-  if (numHits > 0) {
 
-    vec3 colors[10];
-
-    colors[0] = vec3(1, 0, 0);
-    colors[1] = vec3(0, 1, 0);
-    colors[2] = vec3(0, 0, 1);
-    colors[3] = vec3(1, 1, 0);
-    colors[4] = vec3(1, 0, 1);
-    colors[5] = vec3(0, 1, 1);
-    colors[6] = vec3(0.9, 0.7, 0.2);
-    colors[7] = vec3(0.2, 0.9, 0.7);
-    colors[8] = vec3(0.7, 0.9, 0.2);
-    colors[9] = vec3(0.7, 0.2, 0.9);
-    closest.mat.col = mix(closest.mat.col, colors[mod(numHits, 10)], 0.8);
-  }
-  */
   //float shapesTested = float(closest.numShapeTests)/200.0;
 
   //vec3 red = vec3(1.0, 0.0, 0.0);
@@ -613,7 +489,7 @@ void main() {
   vec3 rd = normalize(vec3(uv, 1.2));
 
 
-  Ray result = rayMarch(ro, rd, 2000., backgroundColor);
+  Ray result = rayMarch(ro, rd, 1024., backgroundColor);
   col = result.mat.col;
   if (result.hit) {
     col = pow(col, vec3(0.7));

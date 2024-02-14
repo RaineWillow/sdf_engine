@@ -22,26 +22,32 @@ uniform sampler2D BVHUnion;
 uniform vec2 BVHUnionBufferResolution;
 uniform int BVHUnionItemSize;
 
-const int MAX_MARCHING_STEPS = 50;
+const int MAX_MARCHING_STEPS = 100;
 
 int maxIterations = 1024;
 
 
 int numShapeTests = 0;
 
+struct Material {
+  vec3 col;
+};
+
 struct Surface {
   float sd;
-  vec3 col;
+  Material mat;
 };
 
 struct Ray {
   float sd;
-  vec3 col;
+  Material mat;
   bool hit;
   int id;
   bool altColor;
   int numShapeTests;
 };
+
+
 
 vec3 transform(vec3 p, vec3 q) {
   return p-q;
@@ -183,8 +189,8 @@ Pointer convertPixToPointer(vec4 pixel) {
 //end------------------------------------------------------------------------------
 
 //surface distance functions-------------------------------------------------------
-Surface sdSphere(vec3 p, float r, vec3 col) {
-  return Surface(length(p) - r, col);
+Surface sdSphere(vec3 p, float r, Material mat) {
+  return Surface(length(p) - r, mat);
 }
 //end------------------------------------------------------------------------------
 
@@ -223,6 +229,45 @@ float sdAxisBox( vec3 p, vec3 b )
   vec3 q = abs(p) - b;
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
+
+struct AABB {
+  vec3 pos;
+  vec3 bound;
+};
+
+AABB getBoundingBoxFromPointer(Pointer item) {
+  if (item.type == 2) {
+    vec3 boxPos = vec3(
+      convertPixToNum(accessBVHUnionParameter(item.address, 1)),
+      convertPixToNum(accessBVHUnionParameter(item.address, 2)),
+      convertPixToNum(accessBVHUnionParameter(item.address, 3))
+    );
+    vec3 boxSize = vec3(
+      convertPixToNum(accessBVHUnionParameter(item.address, 4)),
+      convertPixToNum(accessBVHUnionParameter(item.address, 5)),
+      convertPixToNum(accessBVHUnionParameter(item.address, 6))
+    );
+
+    return AABB(boxPos, boxSize);
+  } else if (item.type == 1) {
+    vec3 boxPos = vec3(
+      convertPixToNum(accessShapeParameter(item.address, 2)), 
+      convertPixToNum(accessShapeParameter(item.address, 3)), 
+      convertPixToNum(accessShapeParameter(item.address, 4))
+    );
+    vec3 boxSize = vec3(
+      convertPixToNum(accessShapeParameter(item.address, 10)), 
+      convertPixToNum(accessShapeParameter(item.address, 11)), 
+      convertPixToNum(accessShapeParameter(item.address, 12))
+    );
+
+    return AABB(boxPos, boxSize);
+  }
+}
+
+float sdFloor(vec3 p) {
+  return p.y + 30.;
+}
 //end------------------------------------------------------------------------------
 
 //stack recursion defs-------------------------------------------------------------
@@ -233,12 +278,16 @@ struct BVHStackFrame {
   bool processed;
 };
 
-BVHStackFrame BVHStack[100];
+const int maxStackSize = 50;
+
+BVHStackFrame BVHStack[maxStackSize];
 int itemsOnBVHStack = 0;
 
 void pushBVHStackFrame(Pointer newItem) {
-  BVHStack[itemsOnBVHStack] = BVHStackFrame(newItem, int[8](0, 0, 0, 0, 0, 0, 0, 0), 0, false);
-  itemsOnBVHStack += 1;
+  if (itemsOnBVHStack < maxStackSize) {
+    BVHStack[itemsOnBVHStack] = BVHStackFrame(newItem, int[8](0, 0, 0, 0, 0, 0, 0, 0), 0, false);
+    itemsOnBVHStack += 1;
+  }
 }
 
 void popBVHStackFrame() {
@@ -248,196 +297,37 @@ void popBVHStackFrame() {
 void clearBVHStack() {
   itemsOnBVHStack = 0;
 }
-
-int shapesIndexes[500];
-int numShapesOnRay = 0;
 //end------------------------------------------------------------------------------
+
+//Ray drawPrimative(vec3 p, float prec, int index);
+
+//<- insertion point for all ShapeComposites
 
 Ray drawObject(vec3 p, float prec, int index) {
 
   iBool objectId = convertPixToIBool(accessShapeParameter(index, 0));
   if (objectId.val == 0) {
     vec3 objPos = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
-    float objectRadius = convertPixToNum(accessShapeParameter(index, 28));
-    vec3 objectCol = convertPixToCol(accessShapeParameter(index, 13));
-    Surface obj = sdSphere(transform(p, objPos), objectRadius, objectCol);
-    return Ray(obj.sd, obj.col, obj.sd <= prec, index, false, 0);
+    float objectRadius = convertPixToNum(accessShapeParameter(index, 32));
+    Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 13)));
+    Surface obj = sdSphere(transform(p, objPos), objectRadius, objectMat);
+    return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
   }
 }
 
-Ray drawObjects(vec3 p, vec3 rd, float prec, float boundRadius) {
-  int index = 0;
-  Ray closest = Ray(boundRadius, vec3(0.0), false, -1, false, 0);
-
-  for (int i = 0; i < numShapesOnRay; i++) {
-    closest = rayUnion(closest, drawObject(p, prec, shapesIndexes[i]));
-  }
-/*
-  Pointer root = Pointer(0, 2);
-  pushBVHStackFrame(root);
-  int numIterations = 0;
-
-  while (itemsOnBVHStack > 0) {
-    numIterations += 1;
-    int pointerPosition = itemsOnBVHStack - 1;
-    Pointer currentItem = BVHStack[pointerPosition].currentAddress;
-    if (BVHStack[pointerPosition].processed) {
-      popBVHStackFrame();
-    } else if (currentItem.type == 2) {
-      vec3 boxPos = vec3(
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 1)),
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 2)),
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 3))
-      );
-      vec3 boxSize = vec3(
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 4)),
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 5)),
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 6))
-      );
-      if (boxIntersection(transform(p, boxPos), rd, boxSize).x != -1) {
-        for (int i = 0; i < 8; i++) {
-          Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
-          if (currentChild.type != 0) {
-            pushBVHStackFrame(currentChild);
-          }
-
-          BVHStack[pointerPosition].processed = true;
-          //closest.col = mix(closest.col, vec3(normalize(boxPos+boxSize)), 0.5);
-          //closest.altColor = true;
-        }
-      } else {
-        popBVHStackFrame();
-      }
-    } else if (currentItem.type == 1) {
-      int i = currentItem.address;
-      vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
-      float objectRadius = convertPixToNum(accessShapeParameter(i, 9));
-      vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
-      vec3 objectCol = convertPixToCol(accessShapeParameter(i, 13));
-      if (sphIntersect(p, rd, objPos, objectRadius).x != -1) {
-        closest = rayUnion(closest, drawObject(p, prec, i));
-      }
-      popBVHStackFrame();
-    }
-  }
-  numShapeTests = numIterations;
-*/
-/*
-  while (itemsOnBVHStack > 0) {
-      numIterations += 1;
-      int pointerPosition = itemsOnBVHStack - 1;
-      Pointer currentItem = BVHStack[pointerPosition].currentAddress;
-      if (BVHStack[pointerPosition].processed) {
-        popBVHStackFrame();
-      } else if (currentItem.type == 2) {
-        vec3 boxPos = vec3(
-          convertPixToNum(accessBVHUnionParameter(currentItem.address, 1)),
-          convertPixToNum(accessBVHUnionParameter(currentItem.address, 2)),
-          convertPixToNum(accessBVHUnionParameter(currentItem.address, 3))
-        );
-        vec3 boxSize = vec3(
-          convertPixToNum(accessBVHUnionParameter(currentItem.address, 4)),
-          convertPixToNum(accessBVHUnionParameter(currentItem.address, 5)),
-          convertPixToNum(accessBVHUnionParameter(currentItem.address, 6))
-        );
-        float boxDist = sdAxisBox(transform(p, boxPos), boxSize);
-        if (boxDist <= 0.9) {
-          for (int i = 0; i < 8; i++) {
-            Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
-            if (currentChild.type != 0) {
-              pushBVHStackFrame(currentChild);
-            }
-
-            BVHStack[pointerPosition].processed = true;
-            //closest.col = mix(closest.col, vec3(normalize(boxPos+boxSize)), 0.5);
-            //closest.altColor = true;
-          }
-        } else if (boxIntersection(transform(p, boxPos), rd, boxSize).x != -1) {
-          closest = rayUnion(closest, Ray(boxDist, vec3(0.0), false, -1, false, 0));
-          popBVHStackFrame();
-        } else {
-          popBVHStackFrame();
-        }
-        
-      } else if (currentItem.type == 1) {
-        int i = currentItem.address;
-        vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
-        float objectRadius = convertPixToNum(accessShapeParameter(i, 9));
-        vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
-        vec3 objectCol = convertPixToCol(accessShapeParameter(i, 13));
-        if (sphIntersect(p, rd, objPos, objectRadius).x != -1) {
-          closest = rayUnion(closest, drawObject(p, prec, i));
-        }
-        popBVHStackFrame();
-      }
-    }
-    numShapeTests = numIterations;
-*/
-
-
-/*
-  for (int i = 0; i < maxObjects; i++) {
-    if (i > numObjects || closest.hit) {
-      break;
-    }
-    numShapeTests += 1;
-    vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
-    float objectRadius = convertPixToNum(accessShapeParameter(i, 9));
-    vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
-    vec3 objectCol = convertPixToCol(accessShapeParameter(i, 13));
-    if (sphIntersect(p, rd, objPos, objectRadius).x != -1) {
-      
-      closest = rayUnion(closest, drawObject(p, prec, i));
-    }
-  }
-*/
-/*
-  for (int i = 0; i < maxObjects; i++) {
-    if (i > numObjects || closest.hit) {
-      break;
-    }
-    vec3 boxPos = vec3(
-        convertPixToNum(accessBVHUnionParameter(i, 1)),
-        convertPixToNum(accessBVHUnionParameter(i, 2)),
-        convertPixToNum(accessBVHUnionParameter(i, 3))
-      );
-    //numShapeTests += 1;
-    vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
-    float objectRadius = convertPixToNum(accessShapeParameter(i, 9));
-    vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
-    vec3 objectCol = convertPixToCol(accessShapeParameter(i, 13));
-    if (sphIntersect(p, rd, objPos, objectRadius).x != -1) {
-      
-      closest = rayUnion(closest, drawObject(p, prec, i));
-    }
-  }
-*/
-  /*
-  for (int i = 0; i < maxObjects; i++) {
-    if (i > numObjects || closest.hit) {
-      break;
-    }
-    numShapeTests += 1;
-    closest = rayUnion(closest, drawObject(p, prec, i));
-  }
-  */
-  closest.numShapeTests = numShapeTests;
-
-  return closest;
-}
-
-vec3 calcNormal(vec3 p, vec3 rd, float prec, float boundRadius) {
+vec3 calcNormal(vec3 p, float prec, int index) {
     vec2 e = vec2(1.0, -1.0) * 0.0005; // epsilon
     return normalize(
-      e.xyy * drawObjects(p + e.xyy, rd, prec, boundRadius).sd +
-      e.yyx * drawObjects(p + e.yyx, rd, prec, boundRadius).sd +
-      e.yxy * drawObjects(p + e.yxy, rd, prec, boundRadius).sd +
-      e.xxx * drawObjects(p + e.xxx, rd, prec, boundRadius).sd
+      e.xyy * drawObject(p + e.xyy, prec, index).sd +
+      e.yyx * drawObject(p + e.yyx, prec, index).sd +
+      e.yxy * drawObject(p + e.yxy, prec, index).sd +
+      e.xxx * drawObject(p + e.xxx, prec, index).sd
     );
 }
 
 Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
-  Ray closest = Ray(boundRadius, backgroundColor, false, -1, false, 0);
+  Material defaultColor = Material(backgroundColor);
+  Ray closest = Ray(boundRadius, defaultColor, false, -1, false, 0);
   vec3 p = ro;
   float newI = 0.0;
 
@@ -445,7 +335,9 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
   pushBVHStackFrame(root);
   int numIterations = 0;
 
-  while (itemsOnBVHStack > 0) {
+  float lastDepth = boundRadius;
+
+  while (itemsOnBVHStack > 0 && !closest.hit) {
     int pointerPosition = itemsOnBVHStack-1;
     Pointer currentItem = BVHStack[pointerPosition].currentAddress;
 
@@ -470,7 +362,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
         convertPixToNum(accessBVHUnionParameter(currentItem.address, 6))
       );
 
-      if (boxIntersection(transform(p, boxPos), rd, boxSize).x != -1) {
+      if (boxIntersection(transform(p, boxPos), rd, boxSize).y != -1) {
         for (int i = 0; i < 8; i++) {
           Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
           if (currentChild.type != 0) {
@@ -486,40 +378,43 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
     } else if (currentItem.type == 1) {
       int i = currentItem.address;
       vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
-      float objectRadius = convertPixToNum(accessShapeParameter(i, 9));
       vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
-      vec3 objectCol = convertPixToCol(accessShapeParameter(i, 13));
-      if (sphIntersect(p, rd, objPos, objectRadius).x != -1) {
-        shapesIndexes[numShapesOnRay] = i;
-        numShapesOnRay += 1;
+      vec2 intersectionPoints = boxIntersection(transform(p, objPos), rd, objBound);
+      float depth = max(intersectionPoints.x, 0.0);
+      if (intersectionPoints.y != -1 && (lastDepth >= depth)) {
+        float maxDist = intersectionPoints.y;
+        Ray nextClosest = Ray(boundRadius, defaultColor, false, -1, false, 0);
+        for (int j = 0; j < MAX_MARCHING_STEPS; j++) {
+          nextClosest = rayUnion(nextClosest, drawObject(p+depth*rd, 0.01, i));
+          if (nextClosest.hit) {
+            if (depth < lastDepth) {
+              closest = nextClosest;
+              lastDepth = depth;
+            }
+            break;
+          } else if (depth >= maxDist) {
+            break;
+          } else {
+            depth += nextClosest.sd;
+          }
+        }
       }
       popBVHStackFrame();
     }
   }
 
-  for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-    closest = drawObjects(p, rd, 0.01, boundRadius);
-    //closest.sd = max(sdCapsule(p, p, p+rd*boundRadius, 0.1), closest.sd);
-    if (closest.hit || closest.sd >= boundRadius) {
-      break;
-    } else {
-      p += rd*closest.sd;
-    }
-    newI = float(i)/float(20);
-  }
-
-
-
+  
 
   if (closest.hit) {
-    vec3 normal = calcNormal(p, rd, 0.005, boundRadius);
+    p = p+lastDepth*rd;
+    vec3 normal = calcNormal(p, 0.01, closest.id);
     vec3 lightPosition = ro;
     vec3 lightDirection = normalize(lightPosition-p);
     float dif = clamp(dot(normal, lightDirection), 0.1, 1.);
-    closest.col*=dif;
+    closest.mat.col*=dif;
   } else {
     if (!closest.altColor) {
-      closest.col = backgroundColor;
+      closest.mat.col = backgroundColor;
     }
   }
 
@@ -540,15 +435,24 @@ void main() {
 
   vec3 col = vec3(0);
 
-  vec3 ro = vec3(0, 0, -50);
+  vec3 ro = vec3(0, 0, -20);
   vec3 rd = normalize(vec3(uv, 1.2));
 
 
-  Ray result = rayMarch(ro, rd, 400., backgroundColor);
-  col = result.col;
+  Ray result = rayMarch(ro, rd, 1024., backgroundColor);
+  col = result.mat.col;
   if (result.hit) {
     col = pow(col, vec3(0.7));
   }
+
+  /*
+  vec2 bCheck = boxIntersection(ro-ro, rd, vec3(10.0, 10.0, 10.0));
+  if (bCheck.y > 14.0) {
+    col = vec3(0., 1., 0.);
+  } else {
+    col = vec3(1.0, 0.0, 0.0);
+  }
+  */
 /*
   if (convertPixToNum(accessShapeParameter(1, 2)) == 4.0) {
     col = vec3(0.0, 1.0, 0.0);

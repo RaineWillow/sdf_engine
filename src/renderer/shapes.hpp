@@ -10,15 +10,24 @@
 #include <iostream>
 #include "BVH_tree_node.hpp"
 #include "memory/memory_pixel.hpp"
+#include "axis_aligned_bounding_box.hpp"
 
 class Shape {
 public:
 
   Shape() {
-    for (int i = 0; i < 48; i++) {
+    for (int i = 0; i < 52; i++) {
       Pixel defaultParam;
       _params.push_back(defaultParam);
     }
+    setK(0);
+    _center = sf::Glsl::Vec3(0, 0, 0);
+
+    _writeData = new sf::Uint8[52*4];
+  }
+
+  ~Shape() {
+    delete[] _writeData;
   }
 
   bool isPrimative() {
@@ -33,8 +42,8 @@ public:
     return _address;
   }
 
-  std::string getModelId() {
-    return _modelId;
+  float getK() {
+    return _K;
   }
 
   sf::Glsl::Vec3 getPos() {
@@ -43,10 +52,6 @@ public:
 
   sf::Glsl::Vec4 getRot() {
     return _qRot;
-  }
-
-  double getBoundRadius() {
-    return _boundRadius;
   }
 
   sf::Glsl::Vec3 getBound() {
@@ -89,6 +94,11 @@ public:
     _params[0].toIBool(_isPrimative, _objectId);
   }
 
+  void setK(float K) {
+    _K = K;
+    _params[1].toHighFloat(_K);
+  }
+
   void setPos(sf::Glsl::Vec3 pos) {
     _pos = pos;
     _params[2].toNum(_pos.x);
@@ -102,12 +112,6 @@ public:
     _params[6].toHighFloat(_qRot.y);
     _params[7].toHighFloat(_qRot.z);
     _params[8].toHighFloat(_qRot.w);
-  }
-
-  void setBoundRadius(double radius) {
-    _boundRadius = radius+0.5;
-    _params[9].toNum(_boundRadius);
-    setBound(sf::Glsl::Vec3(_boundRadius, _boundRadius, _boundRadius));
   }
 
   void setBound(sf::Glsl::Vec3 boundingBox) {
@@ -164,31 +168,57 @@ public:
     _BVHTreeNode = node;
   }
 
-  void updateParams(sf::Uint8 * dataArray) {
+  bool inBVHTree() {
+    return _BVHTreeNode != NULL;
+  }
+
+  virtual void updateMaxMinFromCenter()=0;
+
+  void updateBoundingBox() {
+    updateMaxMinFromCenter();
+
+    //calculate based on transform
+    AxisAlignedBoundingBox bound = fromMinMax(_minBound, _maxBound);
+    bound.bound.x += _K;
+    bound.bound.y += _K;
+    bound.bound.z += _K;
+    setBound(bound.bound);
+    setPos(sf::Glsl::Vec3(_pos.x+bound.pos.x, _pos.y+bound.pos.y, _pos.z+bound.pos.z));
+  }
+
+  void updateParams(sf::Uint8 * &dataArray) {
     for (int i = 0; i < _params.size(); i++) {
-      _params[i].writeToArray(i, dataArray, 48);
+      _params[i].writeToArray(i, _writeData, 52);
     }
+    dataArray = _writeData;
   }
 protected:
   bool _destroyed = false;
 
   int _objectId;
   bool _isPrimative = false;
-  std::string _modelId;
 
-
+  float _K; 
   sf::Glsl::Vec3 _pos;
   sf::Glsl::Vec4 _qRot;
-  double _boundRadius = 0.0;
   sf::Glsl::Vec3 _box;
   sf::Glsl::Vec3 _aColor;
   sf::Glsl::Vec3 _dColor;
   sf::Glsl::Vec3 _sColor;
+
+  sf::Uint8 * _writeData;
+
   double _shine;
   double _opacity;
   double _IOR;
   sf::Glsl::Vec4 _emit;
   float k = 0.5;
+
+  //computations for making sure the center of the shape is always translated back
+  //to the origin
+  sf::Glsl::Vec3 _center;
+  sf::Glsl::Vec3 _maxBound;
+  sf::Glsl::Vec3 _minBound;
 
   void setObjectId(int id) {
     _objectId = id;
@@ -212,8 +242,13 @@ public:
 
   void setRadius(double radius) {
     _radius = radius;
-    this->_params[32].toNum(_radius);
-    this->setBoundRadius(_radius);
+    this->_params[35].toNum(_radius);
+    this->updateBoundingBox();
+  }
+
+  void updateMaxMinFromCenter() {
+    this->_maxBound = sf::Glsl::Vec3(_radius, _radius, _radius);
+    this->_minBound = sf::Glsl::Vec3(-_radius, -_radius, -_radius);
   }
 private:
   double _radius;

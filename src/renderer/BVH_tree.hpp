@@ -24,14 +24,19 @@ public:
 
   void bind(sf::Shader & shader, std::string bufferName);
 
+  AxisAlignedBoundingBox resizeNodeFromChildren(BVHTreeNode * node);
+
   void addItemFromNode(BVHTreeNode * node, BVHTreeNode * item);
   void addItemToRoot(BVHTreeNode * item);
   void destroyNode(BVHTreeNode * node);
   void updateNode(BVHTreeNode * node);
 
   BVHTreeNode * addLeaf(Pixel address, sf::Glsl::Vec3 pos, sf::Glsl::Vec3 bound);
+  void updateLeaf(BVHTreeNode * node, sf::Glsl::Vec3 pos, sf::Glsl::Vec3 bound);
   void recurseTree(BVHTreeNode * nextItem, int layer, std::map<int, std::string> & layerData);
   std::string drawTree();
+
+  void update();
 
 private:
   BVHTreeNode * _root;

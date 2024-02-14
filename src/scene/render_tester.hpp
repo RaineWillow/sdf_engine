@@ -32,6 +32,7 @@ private:
   sf::View _renderView;
 
   float testSphereOffset = 0.0;
+  bool onOff = false;
 
   std::vector<Sphere*> spheres;
 };

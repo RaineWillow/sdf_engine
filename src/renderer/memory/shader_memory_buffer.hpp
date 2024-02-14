@@ -7,9 +7,13 @@
 #include "SFML/System.hpp"
 #include "memory_pixel.hpp"
 #include <vector>
+#include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
+#include <string>
+#include <thread>
 
 class ShaderMemoryBuffer {
 public:
@@ -22,6 +26,8 @@ public:
 
     void bind(sf::Shader & shader, std::string bufferName);
 
+    void update();
+
     void render(sf::RenderTexture & renderTarget);
 private:
     int _id;
@@ -29,11 +35,21 @@ private:
     int _itemsPerRow;
     int _memoryBufferResolutionX;
     int _memoryBufferResolutionY;
+
+    int numWrites = 0;
+
     sf::Texture _memoryBuffer;
 
-    sf::Uint8 * _writeArray;
+    std::string _bufferName;
 
     std::vector<int> _freeIndices;
+
+    std::vector<bool> _allIndices;
+
+
+    std::unordered_map<int, sf::Uint8*> _uniqueWrites;
+    std::unordered_map<int, sf::Uint8*> _bufferedWrite;
+    std::unordered_set<int> _updates;
 };
 
 

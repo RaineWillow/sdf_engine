@@ -18,12 +18,13 @@ public:
 
   void addShape(Shape * shape);
   void destroyShape(Shape * shape);
-
-  void updateTest(int newNum);
+  void updateShape(Shape * shape);
 
   void update();
   const sf::Texture & render();
+
 private:
+
   int _width;
   int _height;
   sf::Shader _marcher;

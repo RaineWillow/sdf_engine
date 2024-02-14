@@ -8,6 +8,8 @@
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
+#include <string>
+#include <iostream>
 #include "axis_aligned_bounding_box.hpp"
 #include "memory/memory_pixel.hpp"
 #include "memory/shader_memory_buffer.hpp"
@@ -15,6 +17,7 @@
 class BVHTreeNode {
 public:
   BVHTreeNode(bool isLeaf, bool isRoot, Pixel address);
+  ~BVHTreeNode();
 
   sf::Glsl::Vec3 getPos();
   sf::Glsl::Vec3 getBound();
@@ -40,7 +43,7 @@ public:
   void setParent(BVHTreeNode * parent, size_t parentIndex);
   
 
-  void updateParams(sf::Uint8 * dataArray);
+  void updateParams(sf::Uint8 * &dataArray);
 
   void destroyAllChildren();
 private:
@@ -57,6 +60,8 @@ private:
   BVHTreeNode * _parent;
   size_t _parentIndex;
   BVHTreeNode * _children[8] = {NULL};
+
+  sf::Uint8 * _writeData;
 };
 
 
