@@ -25,7 +25,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 90;
   int rangeY = 90;
   int rangeZ = 90;
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 200; i++) {
     int randX = (rand() % rangeX)-45;
     int randY = (rand() % rangeY)-45;
     int randZ = (rand() % rangeZ);

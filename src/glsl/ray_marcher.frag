@@ -399,7 +399,7 @@ void main() {
 
   vec3 col = vec3(0);
 
-  vec3 ro = vec3(0, 0, -50);
+  vec3 ro = vec3(0, 0, -25);
   vec3 rd = normalize(vec3(uv, 1.2));
 
 
