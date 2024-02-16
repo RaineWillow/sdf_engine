@@ -13,11 +13,11 @@ ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSiz
       _freeIndices.push_back(i);
       _allIndices.push_back(false);
     }
-/*
+
     for (int i = 0; i < _memoryBufferResolutionY; i++) {
       _bufferedWrite[i] = new sf::Uint8[_memoryBufferResolutionX*4];
     }
-*/
+
     _id = id;
 }
 
@@ -65,13 +65,13 @@ void ShaderMemoryBuffer::writeItem(int index, sf::Uint8 * itemArray) {
   int memoryX = (index-memoryY*_itemsPerRow)*_itemSize;
 
   
-  //_uniqueWrites[index] = itemArray;
+  _uniqueWrites[index] = itemArray;
   //_updates.insert(memoryY);
 
   //int memoryY = index/_itemsPerRow;
   //int memoryX = (index-memoryY*_itemsPerRow)*_itemSize;
 
-  _memoryBuffer.update(itemArray, _itemSize, 1, memoryX, memoryY);
+  //_memoryBuffer.update(itemArray, _itemSize, 1, memoryX, memoryY);
 
 }
 
@@ -83,8 +83,8 @@ void ShaderMemoryBuffer::bind(sf::Shader & shader, std::string bufferName) {
 }
 
 void ShaderMemoryBuffer::update() {
-  /*
-  std::cout << _bufferName << ": " << _uniqueWrites.size() << std::endl;
+  
+  //std::cout << _bufferName << ": " << _uniqueWrites.size() << std::endl;
   for (const auto& elem: _uniqueWrites) {
     
     int memoryY = elem.first/_itemsPerRow;
@@ -100,7 +100,7 @@ void ShaderMemoryBuffer::update() {
     _memoryBuffer.update(_bufferedWrite[elem], _itemsPerRow*_itemSize, 1, 0, elem);
     _updates.erase(elem);
   }
-*/
+
 
   numWrites = 0;
 
