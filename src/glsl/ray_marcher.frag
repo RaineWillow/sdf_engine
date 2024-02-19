@@ -593,7 +593,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
   }
   */
 
-  //closest.mat.col = mix(closest.mat.col, vec3(min(float(numHits), 500)/500.0, 0, 0), 0.9);
+  closest.mat.col = mix(closest.mat.col, vec3(min(float(numHits), 500)/500.0, 0, 0), 0.9);
   //float shapesTested = float(closest.numShapeTests)/200.0;
 
   //vec3 red = vec3(1.0, 0.0, 0.0);
