@@ -30,6 +30,7 @@ public:
   void addItemToRoot(BVHTreeNode * item);
   void destroyNode(BVHTreeNode * node);
   void updateNode(BVHTreeNode * node);
+  void resetTree();
 
   BVHTreeNode * addLeaf(Pixel address, sf::Glsl::Vec3 pos, sf::Glsl::Vec3 bound);
   void updateLeaf(BVHTreeNode * node, sf::Glsl::Vec3 pos, sf::Glsl::Vec3 bound);

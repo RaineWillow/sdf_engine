@@ -25,7 +25,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 80;
-  for (int i = 0; i < 2000; i++) {
+  for (int i = 0; i < 6000; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = (rand() % rangeZ);
@@ -82,7 +82,7 @@ void RenderTester::update(sf::RenderWindow * window) {
   state->rayMarcher.updateShape(testSphere);
 
 
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 0; i++) {
     sf::Glsl::Vec3 curPos = spheres[i]->getPos();
     spheres[i]->setPos(sf::Glsl::Vec3(curPos.x+std::sin(testSphereOffset), curPos.y+std::cos(testSphereOffset), curPos.z));
     state->rayMarcher.updateShape(spheres[i]);

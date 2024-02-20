@@ -75,31 +75,15 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   int itemOctant = getBoxOctant(newBox, item->getPos());
 
   std::vector<int> childBoxIndexes;
-  //we will first check if there is a bounding volume that is not a leaf which we use to
-  //add the child to
+
+  
+
   for (int i = 0; i < 8; i++) {
     if (node->hasChild(i)) {
       BVHTreeNode * testChild = node->getChild(i);
-      //if the child is a leaf, we should skip this node, as leaf nodes cannot have
-      //children
       if (testChild->isLeaf()) {
         childBoxIndexes.push_back(i);
         //std::cout << "Skipping leaf: " << i << std::endl;
-        continue;
-      }
-      //the child was not a leaf, so lets see if there is a bounding volume already in 
-      //the octant of the current box which we can attach our new item to. this is 
-      //common if the bounding volume of the node did not change, even after adding the 
-      //item
-      int childOctantTest = getBoxOctant(newBox, testChild->getPos());
-      //std::cout << "Octant " << childOctantTest << " testing against " << itemOctant << std::endl;
-      //std::cout << "Test Pos: x:" << testChild->getPos().x << " y: " << testChild->getPos().y << " z " << testChild->getPos().z << " child pos: x" << item->getPos().x << " y: " << item->getPos().y << " z " << item->getPos().z << std::endl;
-      if (childOctantTest == itemOctant) {
-        //std::cout << "Writing to item " << i << std::endl;
-        node->updateParams(_writeBuffer);
-        _memoryBuffer.writeItem(node->getAddress().pointerIndex(), _writeBuffer);
-        addItemFromNode(testChild, item);
-        return;
       }
     }
   }
@@ -133,6 +117,35 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
       _memoryBuffer.writeItem(node->getAddress().pointerIndex(), _writeBuffer);
       this->addItemFromNode(node, item);
       return;
+    }
+  }
+
+  //we will first check if there is a bounding volume that is not a leaf which we use to
+  //add the child to
+  for (int i = 0; i < 8; i++) {
+    if (node->hasChild(i)) {
+      BVHTreeNode * testChild = node->getChild(i);
+      //if the child is a leaf, we should skip this node, as leaf nodes cannot have
+      //children
+      if (testChild->isLeaf()) {
+        //childBoxIndexes.push_back(i);
+        //std::cout << "Skipping leaf: " << i << std::endl;
+        continue;
+      }
+      //the child was not a leaf, so lets see if there is a bounding volume already in 
+      //the octant of the current box which we can attach our new item to. this is 
+      //common if the bounding volume of the node did not change, even after adding the 
+      //item
+      int childOctantTest = getBoxOctant(newBox, testChild->getPos());
+      //std::cout << "Octant " << childOctantTest << " testing against " << itemOctant << std::endl;
+      //std::cout << "Test Pos: x:" << testChild->getPos().x << " y: " << testChild->getPos().y << " z " << testChild->getPos().z << " child pos: x" << item->getPos().x << " y: " << item->getPos().y << " z " << item->getPos().z << std::endl;
+      if (childOctantTest == itemOctant) {
+        //std::cout << "Writing to item " << i << std::endl;
+        node->updateParams(_writeBuffer);
+        _memoryBuffer.writeItem(node->getAddress().pointerIndex(), _writeBuffer);
+        addItemFromNode(testChild, item);
+        return;
+      }
     }
   }
   //std::cout << "Building new bounding volume layer" << std::endl;
