@@ -50,8 +50,8 @@ struct Ray {
 
 
 
-vec3 transform(vec3 p, vec3 q) {
-  return p-q;
+vec3 transform(vec3 p, vec3 offset) {
+  return p-offset;
 }
 
 float fastLength(vec3 vec) {
@@ -84,8 +84,8 @@ vec4 accessMemoryParameter(sampler2D inBuffer, int index, int parameter, vec2 bu
   return texelFetch(inBuffer, ivec2(colPosition, rowPosition), 0);
 }
 
-vec4 accessShapeParameter(int shapeIndex, int parameter) {
-  return accessMemoryParameter(shapes, shapeIndex, parameter, shapesBufferResolution, shapesItemSize);
+vec4 accessShapeParameter(int index, int parameter) {
+  return accessMemoryParameter(shapes, index, parameter, shapesBufferResolution, shapesItemSize);
 }
 
 vec4 accessBVHUnionParameter(int index, int parameter) {
@@ -356,10 +356,10 @@ Ray drawObject(vec3 p, float prec, int index) {
 
   iBool objectId = convertPixToIBool(accessShapeParameter(index, 0));
   if (objectId.val == 0) {
-    vec3 objPos = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
+    vec3 objOffset = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
     float objectRadius = convertPixToNum(accessShapeParameter(index, 35));
     Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 13)));
-    Surface obj = sdSphere(transform(p, objPos), objectRadius, objectMat);
+    Surface obj = sdSphere(transform(p, objOffset), objectRadius, objectMat);
     return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
   }
 }
@@ -475,7 +475,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       } else {
         popBVHStackFrame();
       }
-    } else if (currentItem.type == 2) {
+    } else if (currentItem.type == 2) { //the item is a aabb
       OrganizerFrame data[8];
       int closestPos = 0;
       int numChildren = 0;
@@ -530,7 +530,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       }
 
       BVHStack[pointerPosition].processed=true;
-    } else if (currentItem.type == 1) {
+    } else if (currentItem.type == 1) { //the item is a shape
       int i = currentItem.address;
       vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
       vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
@@ -574,7 +574,7 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       closest.mat.col = backgroundColor;
     }
   }
-/*
+  /*
   if (numHits > 0) {
 
     vec3 colors[10];
@@ -591,9 +591,8 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
     colors[9] = vec3(0.7, 0.2, 0.9);
     closest.mat.col = mix(closest.mat.col, colors[mod(numHits, 10)], 0.5);
   }
-  */
-
-  closest.mat.col = mix(closest.mat.col, vec3(min(float(numHits), 500)/500.0, 0, 0), 0.9);
+*/
+  //closest.mat.col = mix(closest.mat.col, vec3(min(float(numHits), 500)/500.0, 0, 0), 0.9);
   //float shapesTested = float(closest.numShapeTests)/200.0;
 
   //vec3 red = vec3(1.0, 0.0, 0.0);
@@ -611,7 +610,7 @@ void main() {
 
   vec3 col = vec3(0);
 
-  vec3 ro = vec3(0, 0, -20);
+  vec3 ro = vec3(0, 0, -40);
   vec3 rd = normalize(vec3(uv, 1.2));
 
 

@@ -21,7 +21,6 @@ public:
       _params.push_back(defaultParam);
     }
     setK(0);
-    _center = sf::Glsl::Vec3(0, 0, 0);
 
     _writeData = new sf::Uint8[52*4];
   }
@@ -177,13 +176,17 @@ public:
   void updateBoundingBox() {
     updateMaxMinFromCenter();
 
-    //calculate based on transform
-    AxisAlignedBoundingBox bound = fromMinMax(_minBound, _maxBound);
+    //calculate based on global transform list
+
+    //calculate based on local transform
+
+    sf::Glsl::Vec3 _transformedMin = _minBound;
+    sf::Glsl::Vec3 _transformedMax = _maxBound;
+    AxisAlignedBoundingBox bound = fromMinMax(_transformedMin, _transformedMax);
     bound.bound.x += _K;
     bound.bound.y += _K;
     bound.bound.z += _K;
     setBound(bound.bound);
-    setPos(sf::Glsl::Vec3(_pos.x+bound.pos.x, _pos.y+bound.pos.y, _pos.z+bound.pos.z));
   }
 
   void updateParams(sf::Uint8 * &dataArray) {
@@ -198,7 +201,7 @@ protected:
   int _objectId;
   bool _isPrimative = false;
 
-  float _K; 
+  float _K;
   sf::Glsl::Vec3 _pos;
   sf::Glsl::Vec4 _qRot;
   sf::Glsl::Vec3 _box;
@@ -212,11 +215,10 @@ protected:
   double _opacity;
   double _IOR;
   sf::Glsl::Vec4 _emit;
-  float k = 0.5;
+  float k = 0.1;
 
   //computations for making sure the center of the shape is always translated back
   //to the origin
-  sf::Glsl::Vec3 _center;
   sf::Glsl::Vec3 _maxBound;
   sf::Glsl::Vec3 _minBound;
 

@@ -327,8 +327,7 @@ void BVHTree::updateNode(BVHTreeNode * node) {
   //parent->removeChild(currentNode->getParentIndex());
   
   
-  //simply readd the current node to the tree from the root
-  //addItemToRoot(currentNode);
+  
 
   if (parent->hasChildren()) {
     //std::cout << "Had children!" << std::endl;
@@ -354,6 +353,9 @@ void BVHTree::updateNode(BVHTreeNode * node) {
     //std::cout << "DESTROYED NODE" << std::endl;
     destroyNode(parent);
   }
+
+  //simply readd the current node to the tree from the root
+  //addItemToRoot(currentNode);
 }
 
 BVHTreeNode * BVHTree::addLeaf(Pixel address, sf::Glsl::Vec3 pos, sf::Glsl::Vec3 bound) {
