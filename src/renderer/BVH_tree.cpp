@@ -466,13 +466,17 @@ void BVHTree::update() {
     iterateMode = !iterateMode;
   }
 
+  /*
   if (hasItemUpdates()) {
     std::cout << this->drawTree() << std::endl;
   }
+
+  */
+
+  
   for (int i = 0; i < 8; i++) {
     _updates[i].clear();
   }
-
   iter = 0;
   _memoryBuffer.update();
 
