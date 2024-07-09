@@ -54,21 +54,6 @@ vec3 transform(vec3 p, vec3 offset) {
   return p-offset;
 }
 
-float fastLength(vec3 vec) {
-  float x = dot(vec, vec);
-  uint i;
-  float x2, y;
-    
-  x2 = x*.5;
-  y = x;
-  i = floatBitsToUint(x);       // evil floating point bit hack
-  i = 0x5f3759dfu - ( i >> 1);  // wut
-  y = uintBitsToFloat(i);
-  y = y*(1.5 - (x2 * y * y));   // 1st iteration
-//  y = y*(1.5 - (x2 * y * y));   // 2nd iteration, can be removed
-  return 1/y;
-}
-
 /*
 float fastLength(vec3 vec) {
   return length(vec);
@@ -220,7 +205,7 @@ Pointer convertPixToPointer(vec4 pixel) {
 
 //surface distance functions-------------------------------------------------------
 Surface sdSphere(vec3 p, float r, Material mat) {
-  return Surface(fastLength(p) - r, mat);
+  return Surface(length(p) - r, mat);
 }
 //end------------------------------------------------------------------------------
 
@@ -269,7 +254,7 @@ vec2 boxIntersectionPrecomupute( in vec3 ro, in vec3 rd, vec3 boxSize, vec3 m)
 float sdAxisBox( vec3 p, vec3 b )
 {
   vec3 q = abs(p) - b;
-  return fastLength(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
 struct AABB {
@@ -593,13 +578,11 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
   }
 */
   //closest.mat.col = mix(closest.mat.col, vec3(min(float(numHits), 500)/500.0, 0, 0), 0.9);
-  //float shapesTested = float(closest.numShapeTests)/200.0;
+  float shapesTested = float(numHits)/200.0;
 
-  //vec3 red = vec3(1.0, 0.0, 0.0);
-  //vec3 black = vec3(0.0, 0.0, 0.0);
-  //closest.col = mix(black, red, min(1.0, newI));
-  //closest.col.g = shapesTested;
-  //closest.hit=true;
+  closest.mat.col=vec3(0.0);
+  closest.mat.col.g = shapesTested;
+  closest.hit=true;
   
   return closest;
 }

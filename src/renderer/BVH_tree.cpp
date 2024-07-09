@@ -1,6 +1,7 @@
 #include "BVH_tree.hpp"
 
-BVHTree::BVHTree(int memoryBufferId) : _memoryBuffer(250, 3500, 15, memoryBufferId){
+BVHTree::BVHTree(int memoryBufferId) : _memoryBuffer(250, 3500, 15, memoryBufferId), 
+_keepTracker(sf::Glsl::Vec3(-1, -1, -1), sf::Glsl::Vec3(-1, -1, -1)){
   
   //_writeBuffer = new sf::Uint8[15*4];
   Pixel _rootAddress = _memoryBuffer.newItem();
@@ -41,6 +42,7 @@ AxisAlignedBoundingBox BVHTree::resizeNodeFromChildren(BVHTreeNode * node) {
 void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   //if the node does not have any children, simply set this node as the first child and 
   //set our bounding box accordingly.
+
   if (!node->hasChildren()) {
     node->setPos(item->getPos());
     node->setBound(item->getBound());
@@ -59,6 +61,7 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   node->setPos(newBox.pos);
   node->setBound(newBox.bound);
   
+
   //we first check if the node has any free positions. if it does, we can just put our
   //item in the first free position and end.
   int freeChild = node->anyFree();
@@ -362,7 +365,42 @@ BVHTreeNode * BVHTree::addLeaf(Pixel address, sf::Glsl::Vec3 pos, sf::Glsl::Vec3
   BVHTreeNode * leafNode = new BVHTreeNode(true, false, address);
   leafNode->setPos(pos);
   leafNode->setBound(bound);
-  this->addItemToRoot(leafNode);
+
+  iter+=1;
+
+  if (!_hasAnyBoxes) {
+    _keepTracker.pos = pos;
+    _keepTracker.bound = bound;
+    _hasAnyBoxes = true;
+  } else {
+    AxisAlignedBoundingBox addBox(pos, bound);
+    _keepTracker = addToBox(_keepTracker, addBox);
+  }
+
+  int octant = getBoxOctant(_keepTracker, pos);
+  int manhattanDistance = abs(_keepTracker.pos.x-pos.x) + abs(_keepTracker.pos.y-pos.y) + abs(_keepTracker.pos.z-pos.z);
+
+  int insertLoc = 0;
+
+  //find insert position
+  for (int i = 0; i < _updates[octant].size(); i++) {
+    if (_updates[octant][i].distance >= manhattanDistance) {
+        insertLoc = i+1;
+    } else {
+        break;
+    }
+  }
+
+  SizeOrder newSize(leafNode, manhattanDistance);
+
+  if (insertLoc == _updates[octant].size()) {
+    _updates[octant].push_back(newSize);
+  } else {
+    _updates[octant].insert(_updates[octant].begin() + insertLoc, newSize);
+  }
+
+  
+  //this->addItemToRoot(leafNode);
   return leafNode;
 }
 
@@ -396,11 +434,47 @@ std::string BVHTree::drawTree() {
   for (auto const& x : layerData) {
     retData += std::to_string(x.first) + " " + x.second + "\n";
   }
-  std::cout << "X Pos: " << _root->getPos().x << " Y Pos: " << _root->getPos().y << " Z Pos: " << _root->getPos().z << std::endl;
-  std::cout << "X Size: " << _root->getBound().x << " Y Size: " << _root->getBound().y << " Z Size: " << _root->getBound().z << std::endl;
+  //std::cout << "X Pos: " << _root->getPos().x << " Y Pos: " << _root->getPos().y << " Z Pos: " << _root->getPos().z << std::endl;
+  //std::cout << "X Size: " << _root->getBound().x << " Y Size: " << _root->getBound().y << " Z Size: " << _root->getBound().z << std::endl;
   return retData;
 }
 
 void BVHTree::update() {
+  int updateIter[8] = {0};
+
+  bool iterating = hasItemUpdates();
+
+  bool iterateMode = true;
+
+  while (iterating) {
+    iterating = false;
+    for (int i = 0; i < 8; i++) {
+        if (_updates[i].size() > updateIter[i]) {
+
+            if (iterateMode) {
+                this->addItemToRoot(_updates[i][updateIter[i]].item);
+                updateIter[i] += 1;
+            } else {
+                this->addItemToRoot(_updates[i].back().item);
+                _updates[i].pop_back();
+            }
+        }
+
+        iterating = _updates[i].size() > updateIter[i];
+    }
+
+    iterateMode = !iterateMode;
+  }
+
+  if (hasItemUpdates()) {
+    std::cout << this->drawTree() << std::endl;
+  }
+  for (int i = 0; i < 8; i++) {
+    _updates[i].clear();
+  }
+
+  iter = 0;
   _memoryBuffer.update();
+
+  
 }

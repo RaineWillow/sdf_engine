@@ -5,6 +5,7 @@
 #include "SFML/Graphics.hpp"
 #include "SFML/System.hpp"
 #include <vector>
+#include <list>
 #include <algorithm>
 #include <stdexcept>
 #include <string>
@@ -16,6 +17,15 @@
 #include "memory/shader_memory_buffer.hpp"
 #include "BVH_tree_node.hpp"
 
+struct SizeOrder {
+    BVHTreeNode * item;
+    int distance;
+
+    SizeOrder(BVHTreeNode * inItem, int inSize) {
+        item = inItem;
+        distance = inSize;
+    }
+};
 
 class BVHTree {
 public:
@@ -43,6 +53,25 @@ private:
   BVHTreeNode * _root;
   sf::Uint8 * _writeBuffer;
   ShaderMemoryBuffer _memoryBuffer;
+
+  AxisAlignedBoundingBox _keepTracker;
+  bool _hasAnyBoxes = false;
+
+  
+
+  std::vector<SizeOrder> _updates[8];
+
+  bool hasItemUpdates() {
+    for (int i = 0; i < 8; i++) {
+        if (_updates[i].size() > 0) {
+            return true;
+        }
+    }
+
+    return false;
+  }
+
+  int iter = 0;
 };
 
 #endif

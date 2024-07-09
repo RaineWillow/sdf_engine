@@ -9,7 +9,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   float viewHeight = (yPos > 0) ? ((270.f/480.f)*(float)state->windowWidth)/(float)state->windowHeight : 1.f;
   _renderView.setViewport(sf::FloatRect(0.f, yPos, 1.f, viewHeight));
 
-  state->rayMarcher.update();
+  //state->rayMarcher.update();
   testSphere = new Sphere();
   testSphere->setRadius(1.0);
   testSphere->setPos(sf::Glsl::Vec3(0.0, 0.0, 0.0));
@@ -25,7 +25,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 80;
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 5000; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = (rand() % rangeZ);
