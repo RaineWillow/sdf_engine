@@ -1,5 +1,7 @@
 compiled/
 imgui/
+
+output.txt
 # Prerequisites
 *.d
 
