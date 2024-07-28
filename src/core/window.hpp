@@ -13,6 +13,7 @@
 #include "../renderer/renderer.hpp"
 #include "../scene/scene.hpp"
 #include "../scene/render_tester.hpp"
+#include "../utils/file.hpp"
 #include <math.h>
 #include "SFML/System.hpp"
 

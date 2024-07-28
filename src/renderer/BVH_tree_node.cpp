@@ -8,7 +8,7 @@ BVHTreeNode::BVHTreeNode(bool isLeaf, bool isRoot, Pixel address) {
     Pixel defaultParam;
     _params.push_back(defaultParam);
   }
-
+  _parent = NULL;
   _pos = sf::Glsl::Vec3(0, 0, 0);
   _bound = sf::Glsl::Vec3(0, 0, 0);
   _writeData = new sf::Uint8[15*4];

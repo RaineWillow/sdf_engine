@@ -33,7 +33,7 @@ ShaderMemoryBuffer::~ShaderMemoryBuffer() {
 
 Pixel ShaderMemoryBuffer::newItem() {
   if (_freeIndices.size() == 0) {
-    throw std::overflow_error("Memory Buffer out of memory!");
+    throw std::overflow_error("Memory Buffer" + _bufferName + " out of memory!");
   }
   int newIndex = _freeIndices.back();
   _allIndices[newIndex] = true;

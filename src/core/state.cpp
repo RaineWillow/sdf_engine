@@ -16,7 +16,7 @@ float State::getTargetFPS() {
 
 void State::setTargetFPS(float target) {
   _targetFPS = target;
-  _targetTime = sf::seconds(1.f/_targetFPS-0.0000021);
+  _targetTime = sf::seconds(1.f/_targetFPS);
   _window->setFramerateLimit(_targetFPS*2);
 }
 

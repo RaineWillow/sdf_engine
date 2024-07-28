@@ -25,7 +25,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 80;
-  for (int i = 0; i < 5000; i++) {
+  for (int i = 0; i < 1000; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = (rand() % rangeZ);
@@ -44,7 +44,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   state->rayMarcher.addShape(finalSphere);
   spheres.push_back(finalSphere);
 */
-
+  
   state->rayMarcher.update();
 }
 
@@ -66,7 +66,11 @@ void RenderTester::handleScreensizeChange() {
 }
 
 void RenderTester::handleEvent(sf::RenderWindow * window, sf::Event & event) {
-
+  if (event.type==sf::Event::KeyReleased) {
+    if (event.key.scancode==sf::Keyboard::Scan::X) {
+      std::cout << state->rayMarcher.outTree() << std::endl;
+    }
+  }
 }
 
 void RenderTester::handleController() {
@@ -75,6 +79,8 @@ void RenderTester::handleController() {
 
 void RenderTester::update(sf::RenderWindow * window) {
   testSphereOffset += state->deltaTime.asSeconds();
+
+  
 
   testSphere2->setPos(sf::Glsl::Vec3(std::sin(testSphereOffset)/2.0+1.5, 0, 0));
   state->rayMarcher.updateShape(testSphere2);
@@ -85,6 +91,7 @@ void RenderTester::update(sf::RenderWindow * window) {
   for (int i = 0; i < 0; i++) {
     sf::Glsl::Vec3 curPos = spheres[i]->getPos();
     spheres[i]->setPos(sf::Glsl::Vec3(curPos.x+std::sin(testSphereOffset), curPos.y+std::cos(testSphereOffset), curPos.z));
+    //std::cout << spheres.size() << std::endl;
     state->rayMarcher.updateShape(spheres[i]);
   }
 

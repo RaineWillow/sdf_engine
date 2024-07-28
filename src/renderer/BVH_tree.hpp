@@ -14,6 +14,7 @@
 #include <map>
 #include <iostream>
 #include <unordered_map>
+#include <functional>
 #include "memory/shader_memory_buffer.hpp"
 #include "BVH_tree_node.hpp"
 
@@ -40,6 +41,8 @@ public:
   void addItemToRoot(BVHTreeNode * item);
   void destroyNode(BVHTreeNode * node);
   void updateNode(BVHTreeNode * node);
+  void addLeafToRoot(BVHTreeNode * leafNode);
+  void destroyAllChildrenOfNode(BVHTreeNode * node);
   void resetTree();
 
   BVHTreeNode * addLeaf(Pixel address, sf::Glsl::Vec3 pos, sf::Glsl::Vec3 bound);
@@ -57,9 +60,11 @@ private:
   AxisAlignedBoundingBox _keepTracker;
   bool _hasAnyBoxes = false;
 
-  
+  bool _resetFlag = false;
 
   std::vector<SizeOrder> _updates[8];
+
+  std::vector<BVHTreeNode *> _leafNodes;
 
   bool hasItemUpdates() {
     for (int i = 0; i < 8; i++) {

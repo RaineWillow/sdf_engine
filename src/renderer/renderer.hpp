@@ -21,6 +21,10 @@ public:
   void updateShape(Shape * shape);
 
   void update();
+
+  std::string outTree() {
+    return _BVHUnion.drawTree();
+  }
   const sf::Texture & render();
 
 private:

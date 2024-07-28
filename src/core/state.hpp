@@ -5,10 +5,17 @@
 #include "SFML/Window.hpp"
 #include "SFML/Graphics.hpp"
 #include "../renderer/renderer.hpp"
+#include "../utils/file.hpp"
+#include <stdint.h>
 #include <string>
 #include <map>
 #include <vector>
 #include <utility>
+
+struct FrameCounter {
+  int64_t deltaTime;
+  float fps;
+};
 
 class State {
 public:
@@ -23,12 +30,21 @@ public:
   sf::Time updateTime;
   sf::Time renderTime;
 
+
+  int currentSecond;
+
   sf::Clock deltaClock;
+
+  sf::Clock elapsedClock;
+
+  std::vector<FrameCounter> collectedTimes;
 
   int windowWidth;
   int windowHeight;
 
   Renderer rayMarcher;
+
+  File outFile;
 
   float getTargetFPS();
   void setTargetFPS(float target);

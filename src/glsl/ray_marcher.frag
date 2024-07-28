@@ -578,12 +578,14 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
   }
 */
   //closest.mat.col = mix(closest.mat.col, vec3(min(float(numHits), 500)/500.0, 0, 0), 0.9);
+  
+  /*
   float shapesTested = float(numHits)/200.0;
 
   closest.mat.col=vec3(0.0);
   closest.mat.col.g = shapesTested;
   closest.hit=true;
-  
+  */
   return closest;
 }
 

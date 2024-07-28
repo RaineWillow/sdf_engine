@@ -1,10 +1,10 @@
 CXX=g++
-CFLAGS=-Ofast -march=native
-LIBS=-lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lopengl32
+CFLAGS=
+LIBS=-IC:/msys64/mingw64 -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lopengl32
 
 SOURCES=src/main.cpp
 CORE=src/core/window.cpp src/core/state.cpp src/core/console.cpp src/core/command.cpp
-UTILS=src/utils/trie.cpp src/utils/search_box.cpp
+UTILS=src/utils/trie.cpp src/utils/search_box.cpp src/utils/file.cpp
 RENDER=src/renderer/renderer.cpp src/renderer/BVH_tree_node.cpp src/renderer/shapes_container.cpp src/renderer/BVH_tree.cpp src/renderer/memory/shader_memory_buffer.cpp
 SCENES=src/scene/render_tester.cpp
 

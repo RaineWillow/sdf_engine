@@ -24,6 +24,8 @@ public:
     void freeItem(int index);
     void writeItem(int index, sf::Uint8 * itemArray);
 
+    void reset();
+
     void bind(sf::Shader & shader, std::string bufferName);
 
     void update();

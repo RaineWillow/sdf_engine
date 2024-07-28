@@ -5,7 +5,7 @@ Window::Window(int w, int h, std::string title) {
   _window = new sf::RenderWindow(sf::VideoMode(w, h), title);
 
   _state = new State(_window, w, h);
-  _state->setTargetFPS(60);
+  _state->setTargetFPS(50000);
 
   console = new Console(_state);
 
@@ -39,6 +39,10 @@ Window::~Window() {
 void Window::run() {
   //console->write("Starting...");
   //console->write("\n");
+
+  _state->elapsedClock.restart();
+
+  _state->currentSecond = 0;
   while (_state->running) {
 
     _state->deltaTime = _state->deltaClock.restart();
@@ -67,6 +71,8 @@ void Window::run() {
         }
       }
       ImGui::SFML::ProcessEvent(*_window, event);
+
+      scenes[_state->currentScene]->handleEvent(_window, event);
     }
     ImGui::SFML::Update(*_window, _state->deltaTime);
     scenes[_state->currentScene]->update(_window);
@@ -105,10 +111,30 @@ void Window::run() {
     sf::Time targetTime = _state->getTargetTime();
     sf::Time checkTime = _state->deltaClock.getElapsedTime();
     _state->frameTime = checkTime;
+
+    
+    FrameCounter outTime;
+    outTime.fps = 1.f/_state->deltaTime.asSeconds();
+    outTime.deltaTime = _state->deltaTime.asMicroseconds();
+
+
+    _state->collectedTimes.push_back(outTime);
+
     while (checkTime < targetTime) {
       checkTime = _state->deltaClock.getElapsedTime();
     }
   }
 
+  _state->outFile.appendLine(std::to_string(_state->elapsedClock.restart().asSeconds()));
+
+  for (int i = 0; i < _state->collectedTimes.size(); i++) {
+    FrameCounter writeTime;
+    writeTime.fps = _state->collectedTimes[i].fps;
+    writeTime.deltaTime = _state->collectedTimes[i].deltaTime;
+    _state->outFile.appendLine(std::to_string(writeTime.deltaTime) + " " + std::to_string(writeTime.fps));
+  }
+
+  _state->outFile.saveFile("output.txt");
+  std::cout << "Program Closed!" << std::endl;
   _window->close();
 }

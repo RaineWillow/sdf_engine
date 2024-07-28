@@ -7,6 +7,7 @@
 #include <cmath>
 #include <vector>
 #include <cstdlib>
+#include <iostream>
 
 #include "scene.hpp"
 #include "../core/state.hpp"
