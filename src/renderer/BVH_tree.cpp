@@ -505,7 +505,7 @@ std::string BVHTree::drawTree() {
 }
 
 void BVHTree::update() {
-  //resetTree();
+  resetTree();
 
   int updateIter[8] = {0};
 

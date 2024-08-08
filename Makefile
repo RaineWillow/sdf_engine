@@ -1,36 +1,74 @@
-CXX=g++
-CFLAGS=
-LIBS=-IC:/msys64/mingw64 -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lopengl32
+CXX:=g++
+CFLAGS:=
 
-SOURCES=src/main.cpp
-CORE=src/core/window.cpp src/core/state.cpp src/core/console.cpp src/core/command.cpp
-UTILS=src/utils/trie.cpp src/utils/search_box.cpp src/utils/file.cpp
-RENDER=src/renderer/renderer.cpp src/renderer/BVH_tree_node.cpp src/renderer/shapes_container.cpp src/renderer/BVH_tree.cpp src/renderer/memory/shader_memory_buffer.cpp
-SCENES=src/scene/render_tester.cpp
+ifeq ($(OS),Windows_NT)
+	OSNAME := windows
+else
+	OSNAME := $(shell uname -s)
+endif
 
-IMGUI=imgui/imgui.cpp imgui/imgui_widgets.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_demo.cpp imgui/imgui-SFML.cpp
-CIMGUI=compiled/imgui/imgui.o compiled/imgui/imgui_widgets.o compiled/imgui/imgui_draw.o compiled/imgui/imgui_tables.o compiled/imgui/imgui_demo.o compiled/imgui/imgui-SFML.o
+# Test if you are on windows or linux, which will change some values for compilation and running the program
+ifeq ($(OSNAME), windows)
+	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lopengl32
+	TARGET_EXEC := final_program.exe
+	RUNPRECONDITION := 
+else
+	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lGL
+	TARGET_EXEC := final_program
+	RUNPRECONDITION := nvidia-offload
+endif
 
-all:
-	$(CXX) $(CFLAGS) -o game.exe $(SOURCES) $(CORE) $(UTILS) $(RENDER) $(SCENES) $(CIMGUI) $(LIBS)
+
+# Locations for all compiled CIMGUI files
+CIMGUI := compiled/imgui/imgui.o compiled/imgui/imgui_widgets.o compiled/imgui/imgui_draw.o compiled/imgui/imgui_tables.o compiled/imgui/imgui_demo.o compiled/imgui/imgui-SFML.o
+
+
+BUILD_DIR := ./build
+SRC_DIRS := ./src
+
+# Find all the C and C++ files we want to compile
+SRCS := $(shell find $(SRC_DIRS) -name '*.cpp')
+
+# Prepends BUILD_DIR and appends .o to every src file
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+
+# String substitution (suffix version without %).
+DEPS := $(OBJS:.o=.d)
+
+# Every folder in ./src will need to be passed to GCC so that it can find header files
+INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+# Add a prefix to INC_DIRS
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+
+# The -MMD and -MP flags together generate Makefiles for us!
+CPPFLAGS := $(INC_FLAGS) -MMD -MP
+
+# The final build step.
+$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
+	$(CXX) $(CFLAGS) $(OBJS) $(CIMGUI) -o $@ $(LIBS)
+
+# Build step for C++ source
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: run
-run:
-	./game.exe
-.PHONY: crun
-crun: all
-	./game.exe
-.PHONY: debug
-debug:
-	$(CXX) -g -o game.exe $(SOURCES) $(CORE) $(UTILS) $(RENDER) $(SCENES) $(CIMGUI) $(LIBS)
+run: $(BUILD_DIR)/$(TARGET_EXEC)
+	$(RUNPRECONDITION) $<
+
 .PHONY: clean
 clean:
-	rm -f game.exe
+	rm -r $(BUILD_DIR)
+
 .PHONY: cimgui
 cimgui:
-	$(CXX) $(CFLAGS) -o compiled/imgui/imgui.o         -c imgui/imgui.cpp         $(LIBS)
-	$(CXX) $(CFLAGS) -o compiled/imgui/imgui_widgets.o -c imgui/imgui_widgets.cpp $(LIBS)
-	$(CXX) $(CFLAGS) -o compiled/imgui/imgui_draw.o    -c imgui/imgui_draw.cpp    $(LIBS)
-	$(CXX) $(CFLAGS) -o compiled/imgui/imgui_tables.o  -c imgui/imgui_tables.cpp  $(LIBS)
-	$(CXX) $(CFLAGS) -o compiled/imgui/imgui_demo.o    -c imgui/imgui_demo.cpp    $(LIBS)
-	$(CXX) $(CFLAGS) -o compiled/imgui/imgui-SFML.o    -c imgui/imgui-SFML.cpp    $(LIBS)
+	mkdir -p compiled/imgui
+	$(CXX) $(CFLAGS) -o compiled/imgui/imgui.o         -c imgui/imgui.cpp
+	$(CXX) $(CFLAGS) -o compiled/imgui/imgui_widgets.o -c imgui/imgui_widgets.cpp
+	$(CXX) $(CFLAGS) -o compiled/imgui/imgui_draw.o    -c imgui/imgui_draw.cpp
+	$(CXX) $(CFLAGS) -o compiled/imgui/imgui_tables.o  -c imgui/imgui_tables.cpp
+	$(CXX) $(CFLAGS) -o compiled/imgui/imgui_demo.o    -c imgui/imgui_demo.cpp
+	$(CXX) $(CFLAGS) -o compiled/imgui/imgui-SFML.o    -c imgui/imgui-SFML.cpp
+
+# Include the .d makefiles
+-include $(DEPS)

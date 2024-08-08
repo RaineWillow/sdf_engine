@@ -5,7 +5,7 @@ Window::Window(int w, int h, std::string title) {
   _window = new sf::RenderWindow(sf::VideoMode(w, h), title);
 
   _state = new State(_window, w, h);
-  _state->setTargetFPS(50000);
+  _state->setTargetFPS(60);
 
   console = new Console(_state);
 
@@ -90,7 +90,7 @@ void Window::run() {
       " Render Time: " + std::to_string(_state->renderTime.asSeconds())
     );
     ImGui::Begin("Information", &active, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
-    ImGui::Text(information.c_str());
+    ImGui::Text("%s", information.c_str());
     ImGui::End();
 
     console->display();

@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <thread>
 
 class ShaderMemoryBuffer {

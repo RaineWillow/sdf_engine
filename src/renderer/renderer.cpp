@@ -10,7 +10,7 @@ _BVHUnion(2) {
   sf::Vector2f uResolution(width, height);
 
   _marcher.setUniform("u_resolution", uResolution);
-  _marcher.setUniform("numObjects", 0);
+  //_marcher.setUniform("numObjects", 0);
   _width = width;
   _height = height;
 
