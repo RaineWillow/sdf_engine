@@ -278,14 +278,14 @@ AABB getBoundingBoxFromPointer(Pointer item) {
     return AABB(boxPos, boxSize);
   } else if (item.type == 1) {
     vec3 boxPos = vec3(
-      convertPixToNum(accessShapeParameter(item.address, 2)), 
-      convertPixToNum(accessShapeParameter(item.address, 3)), 
-      convertPixToNum(accessShapeParameter(item.address, 4))
+      convertPixToNum(accessShapeParameter(item.address, 2)) + convertPixToNum(accessShapeParameter(item.address, 12)), 
+      convertPixToNum(accessShapeParameter(item.address, 3)) + convertPixToNum(accessShapeParameter(item.address, 13)), 
+      convertPixToNum(accessShapeParameter(item.address, 4)) + convertPixToNum(accessShapeParameter(item.address, 14))
     );
     vec3 boxSize = vec3(
-      convertPixToNum(accessShapeParameter(item.address, 10)), 
-      convertPixToNum(accessShapeParameter(item.address, 11)), 
-      convertPixToNum(accessShapeParameter(item.address, 12))
+      convertPixToNum(accessShapeParameter(item.address, 15)), 
+      convertPixToNum(accessShapeParameter(item.address, 16)), 
+      convertPixToNum(accessShapeParameter(item.address, 17))
     );
 
     return AABB(boxPos, boxSize);
@@ -343,7 +343,7 @@ Ray drawObject(vec3 p, float prec, int index) {
   if (objectId.val == 0) {
     vec3 objOffset = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
     float objectRadius = convertPixToNum(accessShapeParameter(index, 35));
-    Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 13)));
+    Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 18)));
     Surface obj = sdSphere(transform(p, objOffset), objectRadius, objectMat);
     return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
   }
@@ -517,9 +517,21 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
       BVHStack[pointerPosition].processed=true;
     } else if (currentItem.type == 1) { //the item is a shape
       int i = currentItem.address;
-      vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
-      vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 10)), convertPixToNum(accessShapeParameter(i, 11)), convertPixToNum(accessShapeParameter(i, 12)));
-      vec2 intersectionPoints = boxIntersectionPrecomupute(p - objPos, rd, objBound, m);
+      /*
+      vec3 objPos = vec3(
+        convertPixToNum(accessShapeParameter(i, 2)) + convertPixToNum(accessShapeParameter(i, 12)), 
+        convertPixToNum(accessShapeParameter(i, 3)) + convertPixToNum(accessShapeParameter(i, 13)), 
+        convertPixToNum(accessShapeParameter(i, 4)) + convertPixToNum(accessShapeParameter(i, 14))
+      );
+      
+      //vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
+      vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 15)), convertPixToNum(accessShapeParameter(i, 16)), convertPixToNum(accessShapeParameter(i, 17)));
+
+      */
+
+      AABB objectBound = getBoundingBoxFromPointer(currentItem);
+
+      vec2 intersectionPoints = boxIntersectionPrecomupute(p - objectBound.pos, rd, objectBound.bound, m);
       float depth = max(intersectionPoints.x, 0.0);
       if (intersectionPoints.y != -1.0 && lastDepth > depth) {
         float maxDist = intersectionPoints.y;

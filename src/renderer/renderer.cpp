@@ -33,6 +33,7 @@ Renderer::~Renderer() {
 }
 
 void Renderer::addShape(Shape * shape) {
+  //shape->updateBoundingBox();
   _shapesContainer.addShape(shape);
   shape->setBVHTreeNode(_BVHUnion.addLeaf(shape->getAddress(), shape->getPos(), shape->getBound()));
   //std::cout << numShapes << std::endl;
@@ -46,7 +47,7 @@ void Renderer::destroyShape(Shape * shape) {
 }
 
 void Renderer::updateShape(Shape * shape) {
-  
+  //shape->updateBoundingBox();
   _shapesContainer.updateShape(shape);
   _BVHUnion.updateLeaf(shape->getBVHTreeNode(), shape->getPos(), shape->getBound());
   //std::cout << _BVHUnion.drawTree() << std::endl;

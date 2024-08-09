@@ -46,7 +46,16 @@ public:
   }
 
   sf::Glsl::Vec3 getPos() {
-    return _pos;
+    sf::Glsl::Vec3 pos(_offset.x+_center.x, _offset.y+_center.y, _offset.z+_center.z);
+    return pos;
+  }
+
+  sf::Glsl::Vec3 getRotCenter() {
+    return _cRot;
+  }
+
+  sf::Glsl::Vec3 getCenter() {
+    return _center;
   }
 
   sf::Glsl::Vec4 getRot() {
@@ -98,61 +107,75 @@ public:
     _params[1].toHighFloat(_K);
   }
 
-  void setPos(sf::Glsl::Vec3 pos) {
-    _pos = pos;
-    _params[2].toNum(_pos.x);
-    _params[3].toNum(_pos.y);
-    _params[4].toNum(_pos.z);
+  void setOffset(sf::Glsl::Vec3 offset) {
+    _offset = offset;
+    _params[2].toNum(_offset.x);
+    _params[3].toNum(_offset.y);
+    _params[4].toNum(_offset.z);
   }
 
-  void setQRot(sf::Glsl::Vec4 qRot) {
+  void setRot(sf::Glsl::Vec4 qRot) {
     _qRot = qRot;
-    _params[5].toHighFloat(_qRot.x);
-    _params[6].toHighFloat(_qRot.y);
-    _params[7].toHighFloat(_qRot.z);
-    _params[8].toHighFloat(_qRot.w);
+    _params[5].toNum(_qRot.x);
+    _params[6].toNum(_qRot.y);
+    _params[7].toNum(_qRot.z);
+    _params[8].toNum(_qRot.w);
+  }
+
+  void setRotCenter(sf::Glsl::Vec3 cRot) {
+    _cRot = cRot;
+    _params[9].toNum(_cRot.x);
+    _params[10].toNum(_cRot.y);
+    _params[11].toNum(_cRot.z);
+  }
+
+  void setCenter(sf::Glsl::Vec3 center) {
+    _center = center;
+    _params[12].toNum(_center.x);
+    _params[13].toNum(_center.y);
+    _params[14].toNum(_center.z);
   }
 
   void setBound(sf::Glsl::Vec3 boundingBox) {
     _box = boundingBox;
-    _params[10].toNum(_box.x);
-    _params[11].toNum(_box.y);
-    _params[12].toNum(_box.z);
+    _params[15].toNum(_box.x);
+    _params[16].toNum(_box.y);
+    _params[17].toNum(_box.z);
   }
 
   void setAmbient(sf::Glsl::Vec3 ambient) {
     _aColor = ambient;
-    _params[13].toColor(_aColor);
+    _params[18].toColor(_aColor);
   }
 
   void setDiffuse(sf::Glsl::Vec3 diffuse) {
     _dColor = diffuse;
-    _params[14].toColor(_aColor);
+    _params[19].toColor(_aColor);
   }
 
   void setSpecular(sf::Glsl::Vec3 specular) {
     _sColor = specular;
-    _params[15].toColor(_aColor);
+    _params[20].toColor(_aColor);
   }
 
   void setShine(double shine) {
     _shine = shine;
-    _params[16].toHighFloat(_shine);
+    _params[21].toNum(_shine);
   }
 
   void setOpacity(double opacity) {
     _opacity = opacity;
-    _params[17].toHighFloat(_opacity);
+    _params[22].toNum(_opacity);
   }
 
   void setIOR(double IOR) {
     _IOR = IOR;
-    _params[18].toHighFloat(_opacity);
+    _params[23].toNum(_opacity);
   }
 
   void setEmit(sf::Glsl::Vec4 emit) {
     _emit = emit;
-    _params[19].to4Color(emit);
+    _params[24].to4Color(emit);
   }
 
   void destroy() {
@@ -187,6 +210,7 @@ public:
     bound.bound.y += _K;
     bound.bound.z += _K;
     setBound(bound.bound);
+    setCenter(bound.pos);
   }
 
   void updateParams(sf::Uint8 * &dataArray) {
@@ -195,15 +219,23 @@ public:
     }
     dataArray = _writeData;
   }
+
+  void printParams() {
+    for (int i = 0; i < 52; i++) {
+      std::cout << _params[i].fromNum() << std::endl;
+    }
+  }
 protected:
   bool _destroyed = false;
 
   int _objectId;
   bool _isPrimative = false;
 
-  float _K;
-  sf::Glsl::Vec3 _pos;
+  float _K = 0.8;
+  sf::Glsl::Vec3 _offset;
   sf::Glsl::Vec4 _qRot;
+  sf::Glsl::Vec3 _cRot;
+  sf::Glsl::Vec3 _center;
   sf::Glsl::Vec3 _box;
   sf::Glsl::Vec3 _aColor;
   sf::Glsl::Vec3 _dColor;

@@ -12,25 +12,27 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   //state->rayMarcher.update();
   testSphere = new Sphere();
   testSphere->setRadius(1.0);
-  testSphere->setPos(sf::Glsl::Vec3(0.0, 0.0, 0.0));
+  testSphere->setOffset(sf::Glsl::Vec3(0.0, 0.0, 0.0));
   testSphere->setAmbient(sf::Glsl::Vec3(1.0, 0.0, 0.0));
   state->rayMarcher.addShape(testSphere);
 
   testSphere2 = new Sphere();
   testSphere2->setRadius(1.0);
-  testSphere2->setPos(sf::Glsl::Vec3(1.0, 0.0, 0.0));
+  testSphere2->setOffset(sf::Glsl::Vec3(1.0, 0.0, 0.0));
   testSphere2->setAmbient(sf::Glsl::Vec3(0.0, 0.0, 1.0));
   state->rayMarcher.addShape(testSphere2);
+  
+  //testSphere2->printParams();
 
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 80;
-  for (int i = 0; i < 200; i++) {
+  for (int i = 0; i < 500; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = (rand() % rangeZ);
     Sphere * newSphere = new Sphere();
-    newSphere->setPos(sf::Glsl::Vec3(randX, randY, randZ));
+    newSphere->setOffset(sf::Glsl::Vec3(randX, randY, randZ));
     newSphere->setRadius(0.5);
     newSphere->setAmbient(sf::Glsl::Vec3(0.0, 0.9, 0.3));
     state->rayMarcher.addShape(newSphere);
@@ -38,7 +40,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   }
 /*
   Sphere * finalSphere = new Sphere();
-  finalSphere->setPos(sf::Glsl::Vec3(5, -1, -1));
+  finalSphere->setOffset(sf::Glsl::Vec3(5, -1, -1));
   finalSphere->setRadius(0.8);
   finalSphere->setAmbient(sf::Glsl::Vec3(1.0, 1.0, 0.0));
   state->rayMarcher.addShape(finalSphere);
@@ -82,15 +84,15 @@ void RenderTester::update(sf::RenderWindow * window) {
 
   
 
-  testSphere2->setPos(sf::Glsl::Vec3(std::sin(testSphereOffset)/2.0+1.5, 0, 0));
+  testSphere2->setOffset(sf::Glsl::Vec3(std::sin(testSphereOffset)/2.0+1.5, 0, 0));
   state->rayMarcher.updateShape(testSphere2);
-  testSphere->setPos(sf::Glsl::Vec3(0.0, std::cos(testSphereOffset)+1, 0));
+  testSphere->setOffset(sf::Glsl::Vec3(0.0, std::cos(testSphereOffset)+1, 0));
   state->rayMarcher.updateShape(testSphere);
 
 
   for (int i = 0; i < 200; i++) {
     sf::Glsl::Vec3 curPos = spheres[i]->getPos();
-    spheres[i]->setPos(sf::Glsl::Vec3(curPos.x+std::sin(testSphereOffset), curPos.y+std::cos(testSphereOffset), curPos.z));
+    spheres[i]->setOffset(sf::Glsl::Vec3(curPos.x+std::sin(testSphereOffset), curPos.y+std::cos(testSphereOffset), curPos.z));
     //std::cout << spheres.size() << std::endl;
     state->rayMarcher.updateShape(spheres[i]);
   }

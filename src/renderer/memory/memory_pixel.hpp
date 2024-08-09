@@ -199,6 +199,23 @@ struct Pixel {
     return ((r << 16) + (g << 8) + b);
   }
 
+  double fromNum() {
+    int signBit = r << 7;
+
+    int num;
+    float mantissa;
+
+    if (b == 255 && a == 255) {
+      num = 0;
+      mantissa = -(float(r*256 + g)/65535.0);
+    } else {
+      num = ((r << 8) + g) - 65536*signBit;
+      mantissa = (float(b*256 + a)/65535.0) * float(-signBit | 1);
+    }
+
+    return float(num) + mantissa;
+  }
+
   void writeToArray(int paramIndex, sf::Uint8 * updateArray, int itemSize) {
 
     if (paramIndex >= itemSize) {

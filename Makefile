@@ -13,7 +13,7 @@ endif
 ifeq ($(OSNAME), windows)
 	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lopengl32
 	TARGET_EXEC := final_program.exe
-	RUNPRECONDITION := 
+	RUNPRECONDITION :=
 	RELEASEFLAGS := -Wl,-subsystem,windows
 else
 	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lGL
