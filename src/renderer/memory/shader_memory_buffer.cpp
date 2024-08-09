@@ -26,9 +26,9 @@ ShaderMemoryBuffer::~ShaderMemoryBuffer() {
   for (auto const& x : _bufferedWrite) {
     sf::Uint8 * updateBuffer = x.second;
     delete[] updateBuffer;
-    _bufferedWrite.erase(x.first);
   }
   
+  _bufferedWrite.clear();
 }
 
 Pixel ShaderMemoryBuffer::newItem() {

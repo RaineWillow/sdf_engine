@@ -5,7 +5,7 @@ Window::Window(int w, int h, std::string title) {
   _window = new sf::RenderWindow(sf::VideoMode(w, h), title);
 
   _state = new State(_window, w, h);
-  _state->setTargetFPS(50000);
+  _state->setTargetFPS(60);
 
   console = new Console(_state);
 
@@ -118,7 +118,7 @@ void Window::run() {
     outTime.deltaTime = _state->deltaTime.asMicroseconds();
 
 
-    _state->collectedTimes.push_back(outTime);
+    //_state->collectedTimes.push_back(outTime);
 
     while (checkTime < targetTime) {
       checkTime = _state->deltaClock.getElapsedTime();
