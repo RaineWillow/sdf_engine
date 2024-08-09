@@ -1,5 +1,7 @@
 CXX:=g++
-CFLAGS:=
+CFLAGS:= -march=native -Ofast
+DEBUGFLAGS := -Og -ggdb
+DEBUGGER := gdb
 
 ifeq ($(OS),Windows_NT)
 	OSNAME := windows
@@ -12,10 +14,12 @@ ifeq ($(OSNAME), windows)
 	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lopengl32
 	TARGET_EXEC := final_program.exe
 	RUNPRECONDITION := 
+	RELEASEFLAGS := -Wl,-subsystem,windows
 else
 	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lGL
 	TARGET_EXEC := final_program
 	RUNPRECONDITION := nvidia-offload
+	RELEASEFLAGS :=
 endif
 
 
@@ -43,6 +47,8 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 # The -MMD and -MP flags together generate Makefiles for us!
 CPPFLAGS := $(INC_FLAGS) -MMD -MP
 
+
+
 # The final build step.
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CXX) $(CFLAGS) $(OBJS) $(CIMGUI) -o $@ $(LIBS)
@@ -50,7 +56,7 @@ $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 # Build step for C++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 .PHONY: run
 run: $(BUILD_DIR)/$(TARGET_EXEC)
@@ -59,6 +65,14 @@ run: $(BUILD_DIR)/$(TARGET_EXEC)
 .PHONY: clean
 clean:
 	rm -r $(BUILD_DIR)
+
+
+debug: CFLAGS = $(DEBUGFLAGS)
+debug: clean $(BUILD_DIR)/$(TARGET_EXEC)
+	$(RUNPRECONDITION) $(DEBUGGER) $(BUILD_DIR)/$(TARGET_EXEC)
+
+release: CFLAGS += $(RELEASEFLAGS)
+release: clean $(BUILD_DIR)/$(TARGET_EXEC)
 
 .PHONY: cimgui
 cimgui:
