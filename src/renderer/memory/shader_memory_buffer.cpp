@@ -1,5 +1,6 @@
 #include "shader_memory_buffer.hpp"
 
+
 ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSize, int id) {
     _itemSize = itemSize;
     _itemsPerRow = itemsPerRow;
@@ -27,7 +28,7 @@ ShaderMemoryBuffer::~ShaderMemoryBuffer() {
     sf::Uint8 * updateBuffer = x.second;
     delete[] updateBuffer;
   }
-  
+  _bufferedWrite.clear();
   _bufferedWrite.clear();
 }
 
@@ -66,6 +67,7 @@ void ShaderMemoryBuffer::writeItem(int index, sf::Uint8 * itemArray) {
 
   
   _uniqueWrites[index] = itemArray;
+  //std::cout << "Data write: " << (void *)_uniqueWrites[index] << std::endl;
   //_updates.insert(memoryY);
 
   //int memoryY = index/_itemsPerRow;
@@ -90,16 +92,24 @@ void ShaderMemoryBuffer::update() {
     int memoryY = elem.first/_itemsPerRow;
     int memoryX = (elem.first-memoryY*_itemsPerRow)*_itemSize;
 
+    //std::cout << "Got here: " << elem.second << std::endl;
+
     memcpy(&_bufferedWrite[memoryY][memoryX*4], elem.second, _itemSize*4*sizeof(sf::Uint8));
+
+    //std::cout << "Didn't get here" << std::endl;
+    
     _updates.insert(memoryY);
-    _uniqueWrites.erase(elem.first);
+    //_uniqueWrites.erase(elem.first);
   }
 
+  _uniqueWrites.clear();
+
   for (const auto & elem: _updates) {
-    
     _memoryBuffer.update(_bufferedWrite[elem], _itemsPerRow*_itemSize, 1, 0, elem);
-    _updates.erase(elem);
+    //_updates.erase(elem);
   }
+
+  _updates.clear();
 
 
   numWrites = 0;

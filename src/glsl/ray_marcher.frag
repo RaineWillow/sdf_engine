@@ -12,7 +12,7 @@ uniform vec3 objectCol[maxObjects]; //the colors of objects in the scene
 */
 
 //general object uniforms
-uniform int numObjects; //the number of objects in the scene
+//uniform int numObjects; //the number of objects in the scene
 
 uniform sampler2D shapes;
 uniform vec2 shapesBufferResolution;

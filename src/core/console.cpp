@@ -59,16 +59,16 @@ void Console::display() {
     std::string fancyText = _output[i].substr(0, 3);
     std::string data = _output[i].substr(3);
     if (fancyText=="-$ ") {
-      ImGui::TextColored(ImVec4(0.0, 1.0, 0.0, 1.0), fancyText.c_str());
+      ImGui::TextColored(ImVec4(0.0, 1.0, 0.0, 1.0), "%s", fancyText.c_str());
     } else if (fancyText=="-> ") {
-      ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1.0), fancyText.c_str());
+      ImGui::TextColored(ImVec4(0.8, 0.8, 0.8, 1.0), "%s", fancyText.c_str());
     } else if (fancyText=="-! ") {
-      ImGui::TextColored(ImVec4(1.0, 0.0, 0.0, 1.0), fancyText.c_str());
+      ImGui::TextColored(ImVec4(1.0, 0.0, 0.0, 1.0), "%s", fancyText.c_str());
     } else {
-      ImGui::TextColored(ImVec4(0.4, 0.4, 0.4, 1.0), fancyText.c_str());
+      ImGui::TextColored(ImVec4(0.4, 0.4, 0.4, 1.0), "%s", fancyText.c_str());
     }
     ImGui::SameLine();
-    ImGui::Text(data.c_str());
+    ImGui::Text("%s", data.c_str());
   }
 
   int scrollPosY = ImGui::GetScrollY();

@@ -90,7 +90,7 @@ void Window::run() {
       " Render Time: " + std::to_string(_state->renderTime.asSeconds())
     );
     ImGui::Begin("Information", &active, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
-    ImGui::Text(information.c_str());
+    ImGui::Text("%s", information.c_str());
     ImGui::End();
 
     console->display();
