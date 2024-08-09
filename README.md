@@ -6,8 +6,11 @@
 ### Install dependencies
 
 > [SFML >= 2.5.1](https://github.com/SFML/SFML)
+
 > OpenGL
+
 > [Dear ImGui](https://github.com/ocornut/imgui)
+
 > [ImGui SFML](https://github.com/SFML/imgui-sfml)
 
 SDF Engine is only dependent on SFML/OpenGL, so make sure those are accessible to your build environment. You will also need a command line C++ compiler, as well as make and preferably GDB. There is already a nix flake provided to do this if you run NixOS.
