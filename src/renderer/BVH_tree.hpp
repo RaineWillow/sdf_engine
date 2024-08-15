@@ -75,8 +75,6 @@ private:
 
     return false;
   }
-
-  int iter = 0;
 };
 
 #endif

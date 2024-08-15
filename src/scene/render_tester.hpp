@@ -29,6 +29,7 @@ private:
 
   Sphere * testSphere;
   Sphere * testSphere2;
+  Box * testBox;
 
   sf::View _renderView;
 

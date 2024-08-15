@@ -21,13 +21,20 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   testSphere2->setOffset(sf::Glsl::Vec3(1.0, 0.0, 0.0));
   testSphere2->setAmbient(sf::Glsl::Vec3(0.0, 0.0, 1.0));
   state->rayMarcher.addShape(testSphere2);
+
+
+  testBox = new Box();
+  testBox->setSize(sf::Glsl::Vec3(1.0, 2.0, 1.0));
+  testBox->setAmbient(sf::Glsl::Vec3(1.0, 0.8, 0.0));
+  testBox->setOffset(sf::Glsl::Vec3(10.0, 2.0, 0.0));
+  state->rayMarcher.addShape(testBox);
   
   //testSphere2->printParams();
 
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 80;
-  for (int i = 0; i < 500; i++) {
+  for (int i = 0; i < 0; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = (rand() % rangeZ);
@@ -55,6 +62,7 @@ RenderTester::~RenderTester() {
   state=NULL;
   delete testSphere;
   delete testSphere2;
+  delete testBox;
 
   for (int i = 0; i < spheres.size(); i++) {
     delete spheres[i];
@@ -90,7 +98,7 @@ void RenderTester::update(sf::RenderWindow * window) {
   state->rayMarcher.updateShape(testSphere);
 
 
-  for (int i = 0; i < 200; i++) {
+  for (int i = 0; i < 0; i++) {
     sf::Glsl::Vec3 curPos = spheres[i]->getPos();
     spheres[i]->setOffset(sf::Glsl::Vec3(curPos.x+std::sin(testSphereOffset), curPos.y+std::cos(testSphereOffset), curPos.z));
     //std::cout << spheres.size() << std::endl;

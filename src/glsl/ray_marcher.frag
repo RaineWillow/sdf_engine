@@ -207,6 +207,11 @@ Pointer convertPixToPointer(vec4 pixel) {
 Surface sdSphere(vec3 p, float r, Material mat) {
   return Surface(length(p) - r, mat);
 }
+
+Surface sdBox(vec3 p, vec3 b, Material mat) {
+  vec3 q = abs(p) - b;
+  return Surface(length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0), mat);
+}
 //end------------------------------------------------------------------------------
 
 Ray rayUnion(Ray ray1, Ray ray2) {
@@ -340,11 +345,20 @@ void clearBVHStack() {
 Ray drawObject(vec3 p, float prec, int index) {
 
   iBool objectId = convertPixToIBool(accessShapeParameter(index, 0));
+  vec3 objOffset = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
+  Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 18)));
   if (objectId.val == 0) {
-    vec3 objOffset = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
     float objectRadius = convertPixToNum(accessShapeParameter(index, 35));
-    Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 18)));
     Surface obj = sdSphere(transform(p, objOffset), objectRadius, objectMat);
+    return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
+  } else if (objectId.val == 1) {
+    vec3 objectSize = vec3(
+      convertPixToNum(accessShapeParameter(index, 35)),
+      convertPixToNum(accessShapeParameter(index, 36)),
+      convertPixToNum(accessShapeParameter(index, 37))
+    );
+
+    Surface obj = sdBox(transform(p, objOffset), objectSize, objectMat);
     return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
   }
 }

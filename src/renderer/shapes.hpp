@@ -288,4 +288,28 @@ private:
   double _radius;
 };
 
+class Box : public Shape {
+public:
+  Box() : Shape() {
+    this->setObjectId(1);
+    this->setPrimative(true);
+  }
+
+  void setSize(sf::Glsl::Vec3 size) {
+    _size = size;
+    this->_params[35].toNum(_size.x);
+    this->_params[36].toNum(_size.y);
+    this->_params[37].toNum(_size.z);
+    this->updateBoundingBox();
+  }
+
+  void updateMaxMinFromCenter() {
+    this->_maxBound = sf::Glsl::Vec3(_size.x, _size.y, _size.z);
+    this->_minBound = sf::Glsl::Vec3(-_size.x, -_size.y, -_size.z);
+  }
+
+private:
+  sf::Glsl::Vec3 _size;
+};
+
 #endif /* end of include guard: Shapes_hpp */

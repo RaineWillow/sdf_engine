@@ -376,8 +376,6 @@ void BVHTree::updateNode(BVHTreeNode * node) {
 }
 
 void BVHTree::addLeafToRoot(BVHTreeNode * leafNode) {
-  iter+=1;
-
   sf::Glsl::Vec3 pos = leafNode->getPos();
   sf::Glsl::Vec3 bound = leafNode->getBound();
 
@@ -553,6 +551,5 @@ void BVHTree::update() {
   for (int i = 0; i < 8; i++) {
     _updates[i].clear();
   }
-  iter = 0;
   _memoryBuffer.update();
 }
