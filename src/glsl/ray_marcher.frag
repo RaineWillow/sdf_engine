@@ -100,10 +100,9 @@ int convertPixToInt(vec4 pixel) {
   int set0 = int(pixel.r*255.0);
   int set1 = int(pixel.g*255.0);
   int set2 = int(pixel.b*255.0);
+  int set3 = int(pixel.a*255.0);
 
-  int signBit = set0 >> 7;
-
-  int num = ((set0 << 16) + (set1 << 8) + set2) - 16777216 * signBit;
+  int num = ((set0 << 24) + (set1 << 16) + (set2 << 8) + set3);
 
   return num;
 }
@@ -114,21 +113,9 @@ float convertPixToNum(vec4 pixel) {
   int set2 = int(pixel.b*255.0);
   int set3 = int(pixel.a*255.0);
 
-  int signBit = set0 >> 7;
+  int num = ((set0 << 24) + (set1 << 16) + (set2 << 8) + set3);
 
-  int num;
-  float mantissa;
-
-  if (set2 == 255 && set3 == 255) {
-    num = 0;
-    mantissa = -(float(set0*256 + set1)/65535.0);
-  } else {
-    num = ((set0 << 8) + set1) - 65536*signBit;
-    mantissa = (float(set2*256 + set3)/65535.0) * float(-signBit | 1);
-  }
-
-
-  return float(num) + mantissa;
+  return intBitsToFloat(num);
 }
 
 dInt convertPixToDInt(vec4 pixel) {
@@ -137,10 +124,8 @@ dInt convertPixToDInt(vec4 pixel) {
   int set2 = int(pixel.b*255.0);
   int set3 = int(pixel.a*255.0);
 
-  ivec2 signBits = ivec2(set0 << 7, set2 << 7);
-
-  int num1 = (set0*256 + set1) - 65536*signBits.x;
-  int num2 = (set2*256 + set3) - 65536*signBits.y;
+  int num1 = ((set0 << 8) + set1);
+  int num2 = ((set2 << 8) + set3);
 
   return dInt(num1, num2);
 }
@@ -151,9 +136,7 @@ iBool convertPixToIBool(vec4 pixel) {
   int set2 = int(pixel.b*255.0);
   int set3 = int(pixel.a*255.0);
 
-  int signBit = set0 >> 7;
-
-  int num = ((set0 << 16) + (set1 << 16) + set2) - 16777216*signBit;
+  int num = ((set0 << 16) + (set1 << 8) + set2);
 
   return iBool(set3 > 0, num);
 }
@@ -205,17 +188,6 @@ Ray rayUnion(Ray ray1, Ray ray2) {
 }
 
 //BVH Tree intersecting functions--------------------------------------------------
-vec2 sphIntersect( in vec3 ro, in vec3 rd, in vec3 ce, float ra )
-{
-    vec3 oc = ro - ce;
-    float b = dot( oc, rd );
-    vec3 qc = oc - b*rd;
-    float h = ra*ra - dot( qc, qc );
-    if( h<0.0 ) return vec2(-1.0); // no intersection
-    h = sqrt( h );
-    return vec2( -b-h, -b+h );
-}
-
 vec2 boxIntersection( in vec3 ro, in vec3 rd, vec3 boxSize) 
 {
     vec3 m = 1.0/rd; // can precompute if traversing a set of aligned boxes
@@ -325,7 +297,6 @@ void clearBVHStack() {
 
 //Ray drawPrimative(vec3 p, float prec, int index);
 
-//<- insertion point for all ShapeComposites
 
 Ray drawObject(vec3 p, float prec, int index) {
 

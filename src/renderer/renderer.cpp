@@ -54,8 +54,10 @@ void Renderer::updateShape(Shape * shape) {
 }
 
 void Renderer::update() {
+  
   _shapesContainer.update();
   _BVHUnion.update();
+
 }
 
 const sf::Texture & Renderer::render() {

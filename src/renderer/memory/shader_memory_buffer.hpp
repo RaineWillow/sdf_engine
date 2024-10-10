@@ -15,6 +15,7 @@
 #include <string>
 #include <cstring>
 #include <thread>
+#include <chrono>
 
 class ShaderMemoryBuffer {
 public:
@@ -53,6 +54,11 @@ private:
     std::unordered_map<int, sf::Uint8*> _uniqueWrites;
     std::unordered_map<int, sf::Uint8*> _bufferedWrite;
     std::unordered_set<int> _updates;
+
+    std::chrono::milliseconds waitTime;
+    std::chrono::time_point<std::chrono::steady_clock> last;
+    std::chrono::time_point<std::chrono::steady_clock> currentTime;
+    bool initialUpdate = false;
 };
 
 

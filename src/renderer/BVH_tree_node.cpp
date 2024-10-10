@@ -4,14 +4,15 @@ BVHTreeNode::BVHTreeNode(bool isLeaf, bool isRoot, Pixel address) {
   _isLeaf = isLeaf;
   _isRoot = isRoot;
   _address = address;
-  for (int i = 0; i < 15; i++) {
+  paramsSize = 15;
+  for (int i = 0; i < paramsSize; i++) {
     Pixel defaultParam;
     _params.push_back(defaultParam);
   }
   _parent = NULL;
   _pos = sf::Glsl::Vec3(0, 0, 0);
   _bound = sf::Glsl::Vec3(0, 0, 0);
-  _writeData = new sf::Uint8[15*4];
+  _writeData = new sf::Uint8[paramsSize*4];
 }
 
 BVHTreeNode::~BVHTreeNode() {
@@ -26,8 +27,16 @@ sf::Glsl::Vec3 BVHTreeNode::getBound() {
   return _bound;
 }
 
+void BVHTreeNode::setAddress(Pixel address) {
+  _address = address;
+}
+
 Pixel BVHTreeNode::getAddress() {
   return _address;
+}
+
+int BVHTreeNode::getParamsSize() {
+  return paramsSize;
 }
 
 bool BVHTreeNode::hasChild(size_t childIndex) {

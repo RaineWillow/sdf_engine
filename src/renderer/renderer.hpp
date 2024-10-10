@@ -10,6 +10,7 @@
 #include <iostream>
 #include "shapes_container.hpp"
 #include "BVH_tree.hpp"
+#include <chrono>
 
 class Renderer {
 public:

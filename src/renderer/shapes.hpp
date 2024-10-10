@@ -10,19 +10,21 @@
 #include <iostream>
 #include "BVH_tree_node.hpp"
 #include "memory/memory_pixel.hpp"
+#include "memory/writable.hpp"
 #include "axis_aligned_bounding_box.hpp"
 
-class Shape {
+class Shape : public Writable {
 public:
 
   Shape() {
-    for (int i = 0; i < 52; i++) {
+    paramsSize = 52;
+    for (int i = 0; i < paramsSize; i++) {
       Pixel defaultParam;
       _params.push_back(defaultParam);
     }
     setK(0);
 
-    _writeData = new sf::Uint8[52*4];
+    _writeData = new sf::Uint8[paramsSize*4];
   }
 
   ~Shape() {
@@ -35,6 +37,10 @@ public:
 
   void setAddress(Pixel address) {
     _address = address;
+  }
+
+  int getParamsSize() {
+    return paramsSize;
   }
 
   Pixel getAddress() {
@@ -214,14 +220,14 @@ public:
   }
 
   void updateParams(sf::Uint8 * &dataArray) {
-    for (int i = 0; i < _params.size(); i++) {
-      _params[i].writeToArray(i, _writeData, 52);
+    for (int i = 0; i < paramsSize; i++) {
+      _params[i].writeToArray(i, _writeData, paramsSize);
     }
     dataArray = _writeData;
   }
 
   void printParams() {
-    for (int i = 0; i < 52; i++) {
+    for (int i = 0; i < paramsSize; i++) {
       std::cout << _params[i].fromNum() << std::endl;
     }
   }
@@ -247,7 +253,6 @@ protected:
   double _opacity;
   double _IOR;
   sf::Glsl::Vec4 _emit;
-  float k = 0.1;
 
   //computations for making sure the center of the shape is always translated back
   //to the origin
@@ -258,6 +263,8 @@ protected:
     _objectId = id;
     _params[0].toIBool(_isPrimative, _objectId);
   }
+
+  int paramsSize;
 
   Pixel _address;
   std::vector<Pixel> _params;

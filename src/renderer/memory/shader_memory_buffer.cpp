@@ -1,11 +1,14 @@
 #include "shader_memory_buffer.hpp"
 
 
-ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSize, int id) {
+ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSize, int id) : 
+waitTime(8) {
     _itemSize = itemSize;
     _itemsPerRow = itemsPerRow;
     _memoryBufferResolutionX = itemsPerRow*itemSize;
     _memoryBufferResolutionY = numRows;
+
+    last = std::chrono::steady_clock::now();
 
     _memoryBuffer.create(_memoryBufferResolutionX, _memoryBufferResolutionY);
     _memoryBuffer.setSmooth(false);
@@ -85,7 +88,23 @@ void ShaderMemoryBuffer::bind(sf::Shader & shader, std::string bufferName) {
 }
 
 void ShaderMemoryBuffer::update() {
-  
+  //TODO::GET RID OF THIS
+  /*
+  this is a temporary fix -- each time this runs, there is a call to the gpu to
+  write a lot of data and also flush the gpu write buffer, which is calling often 
+  multiple times per frame. At 60 fps, that's not a lot, but at say, 3000, that's a
+  significant number of writes and flushes, which can lead to completely flooding
+  the PCI write bus. So, by default, it is locked to actually updating once
+  every 8 milliseconds, preventing this issue. However, in the future, more
+  performant code that creates less writes, and a rewrite of the library function 
+  to add a flag to prevent GPU flushes before it is done writing may see an increase
+  in wait times or even removal of this limit.
+  */
+  currentTime = std::chrono::steady_clock::now();
+  if (!((currentTime-last) > waitTime) && initialUpdate) {
+    initialUpdate = true;
+    return;
+  }
   //std::cout << _bufferName << ": " << _uniqueWrites.size() << std::endl;
   for (const auto& elem: _uniqueWrites) {
     

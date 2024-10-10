@@ -6,7 +6,7 @@ Window::Window(int w, int h, std::string title) {
   _window = new sf::RenderWindow(sf::VideoMode(w, h), title, sf::Style::Default, settings);
 
   _state = new State(_window, w, h);
-  _state->setTargetFPS(60);
+  _state->setTargetFPS(5000);
 
   console = new Console(_state);
 

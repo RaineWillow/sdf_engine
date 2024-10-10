@@ -13,15 +13,19 @@
 #include "axis_aligned_bounding_box.hpp"
 #include "memory/memory_pixel.hpp"
 #include "memory/shader_memory_buffer.hpp"
+#include "memory/writable.hpp"
 
-class BVHTreeNode {
+class BVHTreeNode : public Writable {
 public:
   BVHTreeNode(bool isLeaf, bool isRoot, Pixel address);
   ~BVHTreeNode();
 
   sf::Glsl::Vec3 getPos();
   sf::Glsl::Vec3 getBound();
+  void setAddress(Pixel address);
   Pixel getAddress();
+
+  int getParamsSize();
 
   bool hasChild(size_t childIndex);
   BVHTreeNode * getChild(size_t childIndex);
@@ -62,6 +66,7 @@ private:
   BVHTreeNode * _children[8] = {NULL};
 
   sf::Uint8 * _writeData;
+  int paramsSize;
 };
 
 
