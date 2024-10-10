@@ -1,4 +1,4 @@
-
+#version 420 compatibility
 #extension GL_EXT_gpu_shader4 : enable
 #define maxObjects 10000
 
