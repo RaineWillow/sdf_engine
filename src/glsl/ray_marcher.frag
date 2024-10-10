@@ -1,3 +1,5 @@
+
+#extension GL_EXT_gpu_shader4 : enable
 #define maxObjects 10000
 
 
@@ -125,23 +127,6 @@ float convertPixToNum(vec4 pixel) {
     mantissa = (float(set2*256 + set3)/65535.0) * float(-signBit | 1);
   }
 
-
-  return float(num) + mantissa;
-}
-
-float convertPixToHighFloat(vec4 pixel) {
-  int set0 = int(pixel.r*255.0);
-  int set1 = int(pixel.g*255.0);
-  int set2 = int(pixel.b*255.0);
-  int set3 = int(pixel.a*255.0);
-
-
-  int num = set0;
-  float mantissa = float((set1 << 16) + (set2 << 8) + set3)/16777215.0;
-  if (num > 127) {
-    num -= 256;
-    mantissa = -mantissa;
-  }
 
   return float(num) + mantissa;
 }

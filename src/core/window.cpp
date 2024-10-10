@@ -1,8 +1,9 @@
 #include "window.hpp"
 Window::Window(int w, int h, std::string title) {
+  sf::ContextSettings settings(0, 0, 0, 4, 2);
 
   //sf::err().rdbuf(std::cout.rdbuf());
-  _window = new sf::RenderWindow(sf::VideoMode(w, h), title);
+  _window = new sf::RenderWindow(sf::VideoMode(w, h), title, sf::Style::Default, settings);
 
   _state = new State(_window, w, h);
   _state->setTargetFPS(60);

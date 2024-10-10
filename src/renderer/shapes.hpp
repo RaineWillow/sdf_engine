@@ -104,7 +104,7 @@ public:
 
   void setK(float K) {
     _K = K;
-    _params[1].toHighFloat(_K);
+    _params[1].toNum(_K);
   }
 
   void setOffset(sf::Glsl::Vec3 offset) {

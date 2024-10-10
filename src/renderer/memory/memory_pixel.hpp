@@ -62,32 +62,6 @@ struct Pixel {
 
     a = setMantissa;
   }
-//broken, temporarily
-  void toHighFloat(double value) {
-    if (value > 127 || value < -128) {
-      throw std::invalid_argument("HighFloat value: Received value outside of range: " + std::to_string(value));
-    }
-
-    int setVal = value;
-    int setMantissa = 16777215*std::abs(value-setVal);
-
-    //handle int
-    if (setVal < 0) {
-      setVal += 256;
-    }
-
-    r = setVal;
-
-    //handle mantissa
-
-    g = setMantissa/(256*256);
-    setMantissa -= g*256*256;
-
-    b = setMantissa/256;
-    setMantissa -= b*256;
-
-    a = setMantissa;
-  }
 
   void toDInt(int value1, int value2) {
     if (value1 > 32767.0 || value1 < -32768.0) {
