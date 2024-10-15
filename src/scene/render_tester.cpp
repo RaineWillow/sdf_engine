@@ -8,7 +8,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   float yPos = std::max((1-(((270.f/480.f)*(float)state->windowWidth)/(float)state->windowHeight))/2.f, 0.f);
   float viewHeight = (yPos > 0) ? ((270.f/480.f)*(float)state->windowWidth)/(float)state->windowHeight : 1.f;
   _renderView.setViewport(sf::FloatRect(0.f, yPos, 1.f, viewHeight));
-
+/*
   //state->rayMarcher.update();
   testSphere = new Sphere();
   testSphere->setRadius(1.0);
@@ -34,7 +34,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 80;
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 0; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = (rand() % rangeZ);
@@ -60,6 +60,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
 RenderTester::~RenderTester() {
   console=NULL;
   state=NULL;
+  /*
   delete testSphere;
   delete testSphere2;
   delete testBox;
@@ -67,6 +68,7 @@ RenderTester::~RenderTester() {
   for (int i = 0; i < spheres.size(); i++) {
     delete spheres[i];
   }
+  */
 }
 
 void RenderTester::handleScreensizeChange() {
@@ -90,7 +92,7 @@ void RenderTester::handleController() {
 void RenderTester::update(sf::RenderWindow * window) {
   testSphereOffset += state->deltaTime.asSeconds();
 
-  
+  /*
 
   testSphere2->setOffset(sf::Glsl::Vec3(std::sin(testSphereOffset)/2.0+1.5, 0, 0));
   state->rayMarcher.updateShape(testSphere2);
@@ -104,7 +106,7 @@ void RenderTester::update(sf::RenderWindow * window) {
     //std::cout << spheres.size() << std::endl;
     state->rayMarcher.updateShape(spheres[i]);
   }
-
+*/
   state->rayMarcher.update();
 }
 

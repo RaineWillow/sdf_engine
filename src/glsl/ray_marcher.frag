@@ -1,17 +1,8 @@
 #version 420 compatibility
 #extension GL_EXT_gpu_shader4 : enable
-#define maxObjects 10000
 
 
 uniform vec2 u_resolution;
-
-/*
-uniform int objects[maxObjects]; //the ids of the objects in the scene
-uniform vec3 objectPos[maxObjects]; //the positions of the objects in the scene
-uniform vec4 objectRot[maxObjects]; //the rotation of the object in the scene
-uniform float objectBoundR[maxObjects]; //the bounding sphere of the object
-uniform vec3 objectCol[maxObjects]; //the colors of objects in the scene
-*/
 
 //general object uniforms
 //uniform int numObjects; //the number of objects in the scene
@@ -25,10 +16,6 @@ uniform vec2 BVHUnionBufferResolution;
 uniform int BVHUnionItemSize;
 
 const int MAX_MARCHING_STEPS = 40;
-
-
-int maxIterations = 1024;
-
 
 int numShapeTests = 0;
 

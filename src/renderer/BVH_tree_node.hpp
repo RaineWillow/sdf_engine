@@ -66,7 +66,7 @@ private:
   BVHTreeNode * _children[8] = {NULL};
 
   sf::Uint8 * _writeData;
-  int paramsSize;
+  int _paramsSize;
 };
 
 

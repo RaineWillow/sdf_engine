@@ -97,7 +97,7 @@ void ShaderMemoryBuffer::update() {
   the PCI write bus. So, by default, it is locked to actually updating once
   every 8 milliseconds, preventing this issue. However, in the future, more
   performant code that creates less writes, and a rewrite of the library function 
-  to add a flag to prevent GPU flushes before it is done writing may see an increase
+  to add a flag to prevent GPU flushes before it is done writing may see an decrease
   in wait times or even removal of this limit.
   */
   currentTime = std::chrono::steady_clock::now();

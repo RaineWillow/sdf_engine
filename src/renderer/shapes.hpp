@@ -17,14 +17,15 @@ class Shape : public Writable {
 public:
 
   Shape() {
-    paramsSize = 52;
-    for (int i = 0; i < paramsSize; i++) {
+    _paramsSize = 52;
+    for (int i = 0; i < _paramsSize; i++) {
       Pixel defaultParam;
       _params.push_back(defaultParam);
     }
     setK(0);
 
-    _writeData = new sf::Uint8[paramsSize*4];
+    _writeData = new sf::Uint8[_paramsSize*4];
+    _matName = "";
   }
 
   ~Shape() {
@@ -40,7 +41,7 @@ public:
   }
 
   int getParamsSize() {
-    return paramsSize;
+    return _paramsSize;
   }
 
   Pixel getAddress() {
@@ -70,30 +71,6 @@ public:
 
   sf::Glsl::Vec3 getBound() {
     return _box;
-  }
-
-  sf::Glsl::Vec3 getAmbient() {
-    return _aColor;
-  }
-
-  sf::Glsl::Vec3 getDiffuse() {
-    return _dColor;
-  }
-
-  sf::Glsl::Vec3 getSpecular() {
-    return _sColor;
-  }
-
-  double getShine() {
-    return _shine;
-  }
-
-  double getOpacity() {
-    return _opacity;
-  }
-
-  double getIOR() {
-    return _IOR;
   }
 
   BVHTreeNode * getBVHTreeNode() {
@@ -149,39 +126,13 @@ public:
     _params[17].toNum(_box.z);
   }
 
-  void setAmbient(sf::Glsl::Vec3 ambient) {
-    _aColor = ambient;
-    _params[18].toColor(_aColor);
+  void setMaterial(Pixel matAddress, std::string matName) {
+    _matName = matName;
+    _params[25] = matAddress;
   }
 
-  void setDiffuse(sf::Glsl::Vec3 diffuse) {
-    _dColor = diffuse;
-    _params[19].toColor(_aColor);
-  }
-
-  void setSpecular(sf::Glsl::Vec3 specular) {
-    _sColor = specular;
-    _params[20].toColor(_aColor);
-  }
-
-  void setShine(double shine) {
-    _shine = shine;
-    _params[21].toNum(_shine);
-  }
-
-  void setOpacity(double opacity) {
-    _opacity = opacity;
-    _params[22].toNum(_opacity);
-  }
-
-  void setIOR(double IOR) {
-    _IOR = IOR;
-    _params[23].toNum(_opacity);
-  }
-
-  void setEmit(sf::Glsl::Vec4 emit) {
-    _emit = emit;
-    _params[24].to4Color(emit);
+  std::string getMaterial() {
+    return _matName;
   }
 
   void destroy() {
@@ -220,14 +171,14 @@ public:
   }
 
   void updateParams(sf::Uint8 * &dataArray) {
-    for (int i = 0; i < paramsSize; i++) {
-      _params[i].writeToArray(i, _writeData, paramsSize);
+    for (int i = 0; i < _paramsSize; i++) {
+      _params[i].writeToArray(i, _writeData, _paramsSize);
     }
     dataArray = _writeData;
   }
 
   void printParams() {
-    for (int i = 0; i < paramsSize; i++) {
+    for (int i = 0; i < _paramsSize; i++) {
       std::cout << _params[i].fromNum() << std::endl;
     }
   }
@@ -243,16 +194,10 @@ protected:
   sf::Glsl::Vec3 _cRot;
   sf::Glsl::Vec3 _center;
   sf::Glsl::Vec3 _box;
-  sf::Glsl::Vec3 _aColor;
-  sf::Glsl::Vec3 _dColor;
-  sf::Glsl::Vec3 _sColor;
+
+  std::string _matName;
 
   sf::Uint8 * _writeData;
-
-  double _shine;
-  double _opacity;
-  double _IOR;
-  sf::Glsl::Vec4 _emit;
 
   //computations for making sure the center of the shape is always translated back
   //to the origin
@@ -264,7 +209,7 @@ protected:
     _params[0].toIBool(_isPrimative, _objectId);
   }
 
-  int paramsSize;
+  int _paramsSize;
 
   Pixel _address;
   std::vector<Pixel> _params;
@@ -283,7 +228,7 @@ public:
 
   void setRadius(double radius) {
     _radius = radius;
-    this->_params[35].toNum(_radius);
+    this->_params[26].toNum(_radius);
     this->updateBoundingBox();
   }
 
@@ -304,9 +249,9 @@ public:
 
   void setSize(sf::Glsl::Vec3 size) {
     _size = size;
-    this->_params[35].toNum(_size.x);
-    this->_params[36].toNum(_size.y);
-    this->_params[37].toNum(_size.z);
+    this->_params[26].toNum(_size.x);
+    this->_params[27].toNum(_size.y);
+    this->_params[28].toNum(_size.z);
     this->updateBoundingBox();
   }
 
