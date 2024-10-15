@@ -20,7 +20,7 @@ ShapesContainer::~ShapesContainer() {
 }
 
 void ShapesContainer::loadMaterial(Material mat) {
-  if (mat.getName() == "default") {
+  if (mat.getName() == _defaultMat.getName()) {
     throw std::invalid_argument("Error, attempted to load default material!");
     return;
   }
@@ -45,7 +45,7 @@ void ShapesContainer::loadMaterial(Material mat) {
 }
 
 void ShapesContainer::overwriteMaterial(Material mat) {
-  if (mat.getName() == "default") {
+  if (mat.getName() == _defaultMat.getName()) {
     throw std::invalid_argument("Error, attempted to overwrite default material!");
     return;
   }
@@ -57,7 +57,7 @@ void ShapesContainer::overwriteMaterial(Material mat) {
   mat.setAddress(_materials[mat.getName()].mat.getAddress());
 
   _materials[mat.getName()].mat = mat;
-  _materials[mat.getName()].updateParams(_writeBuffer);
+  _materials[mat.getName()].mat.updateParams(_writeBuffer);
   _memoryBuffer.writeItem(_materials[mat.getName()].mat.getAddress().pointerIndex(), _writeBuffer);
 }
 
@@ -69,7 +69,7 @@ void ShapesContainer::removeMaterial(std::string name) {
   }
 
   //should not overwrite the default material
-  if (name == "default") {
+  if (name == _defaultMat.getName()) {
     throw std::invalid_argument("Error, attempted to remove default material!");
     return;
   }
@@ -123,7 +123,7 @@ void ShapesContainer::updateShape(Shape * shape) {
 
 void ShapesContainer::setMaterial(Shape * shape, std::string name) {
   //if the shape's material is not an empty string or the default material, and it is a material in the collection, it should be erased
-  if ((shape->getMaterial() != "") && (shape->getMaterial() != "default") && (_materials.find(shape->getMaterial()) != _materials.end())) {
+  if ((shape->getMaterial() != "") && (shape->getMaterial() != _defaultMat.getName()) && (_materials.find(shape->getMaterial()) != _materials.end())) {
     //find the material
     auto it = std::find(_materials[shape->getMaterial()].shapeWithMat.begin(), _materials[shape->getMaterial()].shapeWithMat.end(), shape);
     //if the shape was there, erase it
@@ -133,7 +133,7 @@ void ShapesContainer::setMaterial(Shape * shape, std::string name) {
   }
   
   //if we are just setting the shape to the default material, go ahead
-  if (name=="default") {
+  if (name==_defaultMat.getName()) {
     shape->setMaterial(_defaultMat.getAddress(), _defaultMat.getName());
     shape->updateParams(_writeBuffer);
     _memoryBuffer.writeItem(shape->getAddress().pointerIndex(), _writeBuffer);
@@ -159,6 +159,17 @@ void ShapesContainer::setMaterial(Shape * shape, std::string name) {
   }
   //append the shape to the list of shapes with that material
   _materials[name].shapeWithMat.push_back(shape);
+}
+
+std::vector<std::string> ShapesContainer::getMaterials() {
+  std::vector<std::string> materialNames;
+  materialNames.push_back(_defaultMat.getName());
+
+  for (const auto& pair : _materials) {
+    materialNames.push_back(pair.first);
+  }
+
+  return materialNames;
 }
 
 void ShapesContainer::bind(sf::Shader & shader, std::string bufferName) {

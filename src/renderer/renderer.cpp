@@ -32,6 +32,18 @@ _BVHUnion(2) {
 Renderer::~Renderer() {
 }
 
+void Renderer::loadMaterial(Material mat) {
+  _shapesContainer.loadMaterial(mat);
+}
+
+void Renderer::overwriteMaterial(Material mat) {
+  _shapesContainer.overwriteMaterial(mat);
+}
+
+void Renderer::removeMaterial(std::string name) {
+  _shapesContainer.removeMaterial(name);
+}
+
 void Renderer::addShape(Shape * shape) {
   //shape->updateBoundingBox();
   _shapesContainer.addShape(shape);
@@ -51,6 +63,14 @@ void Renderer::updateShape(Shape * shape) {
   _shapesContainer.updateShape(shape);
   _BVHUnion.updateLeaf(shape->getBVHTreeNode(), shape->getPos(), shape->getBound());
   //std::cout << _BVHUnion.drawTree() << std::endl;
+}
+
+void Renderer::setMaterial(Shape * shape, std::string name) {
+  _shapesContainer.setMaterial(shape, name);
+}
+
+std::vector<std::string> Renderer::getMaterials() {
+  return _shapesContainer.getMaterials();
 }
 
 void Renderer::update() {

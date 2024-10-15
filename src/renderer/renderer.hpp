@@ -6,10 +6,12 @@
 #include "SFML/System.hpp"
 #include "shapes.hpp"
 #include <vector>
+#include <string>
 #include "SFML/OpenGL.hpp"
 #include <iostream>
 #include "shapes_container.hpp"
 #include "BVH_tree.hpp"
+#include "material.hpp"
 #include <chrono>
 
 class Renderer {
@@ -17,9 +19,16 @@ public:
   Renderer(int width, int height);
   ~Renderer();
 
+  void loadMaterial(Material mat);
+  void overwriteMaterial(Material mat);
+  void removeMaterial(std::string name);
+
   void addShape(Shape * shape);
   void destroyShape(Shape * shape);
   void updateShape(Shape * shape);
+
+  void setMaterial(Shape * shape, std::string name);
+  std::vector<std::string> getMaterials();
 
   void update();
 
