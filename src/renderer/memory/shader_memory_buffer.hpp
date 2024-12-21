@@ -42,7 +42,7 @@ private:
 
     int numWrites = 0;
 
-    sf::Texture _memoryBuffer;
+    sf::RenderTexture _memoryBuffer;
 
     std::string _bufferName;
 

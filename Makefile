@@ -54,6 +54,10 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 
 .PHONY: run
 run: $(BUILD_DIR)/$(TARGET_EXEC)
+	$<
+
+.phony: runmobile
+runmobile: $(BUILD_DIR)/$(TARGET_EXEC)
 	$(RUNPRECONDITION) $<
 
 .PHONY: clean

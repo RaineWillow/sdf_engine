@@ -81,7 +81,7 @@ void ShaderMemoryBuffer::writeItem(int index, sf::Uint8 * itemArray) {
 }
 
 void ShaderMemoryBuffer::bind(sf::Shader & shader, std::string bufferName) {
-  shader.setUniform(bufferName, _memoryBuffer);
+  shader.setUniform(bufferName, _memoryBuffer.getTexture());
   shader.setUniform(bufferName+"BufferResolution", sf::Glsl::Vec2(_memoryBufferResolutionX, _memoryBufferResolutionY));
   shader.setUniform(bufferName+"ItemSize", _itemSize);
   _bufferName = bufferName;
@@ -124,7 +124,7 @@ void ShaderMemoryBuffer::update() {
   _uniqueWrites.clear();
 
   for (const auto & elem: _updates) {
-    _memoryBuffer.update(_bufferedWrite[elem], _itemsPerRow*_itemSize, 1, 0, elem);
+    const_cast<sf::Texture&>(_memoryBuffer.getTexture()).update(_bufferedWrite[elem], _itemsPerRow*_itemSize, 1, 0, elem);
     //_updates.erase(elem);
   }
 
@@ -154,7 +154,7 @@ void ShaderMemoryBuffer::update() {
 
 void ShaderMemoryBuffer::render(sf::RenderTexture & renderTarget) {
   sf::Sprite drawEnable;
-  drawEnable.setTexture(_memoryBuffer);
+  drawEnable.setTexture(_memoryBuffer.getTexture());
   drawEnable.setTextureRect(sf::IntRect(0, 0, 300, 100));
   drawEnable.setPosition(sf::Vector2f(20, 20));
   sf::RectangleShape newRect(sf::Vector2f(300, 100));

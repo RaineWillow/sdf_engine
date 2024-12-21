@@ -8,24 +8,36 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   float yPos = std::max((1-(((270.f/480.f)*(float)state->windowWidth)/(float)state->windowHeight))/2.f, 0.f);
   float viewHeight = (yPos > 0) ? ((270.f/480.f)*(float)state->windowWidth)/(float)state->windowHeight : 1.f;
   _renderView.setViewport(sf::FloatRect(0.f, yPos, 1.f, viewHeight));
-/*
+
+  testLight1 = new Light();
+  testLight1->setPosition(sf::Glsl::Vec3(0, 10, 0));
+  testLight1->setColor(sf::Glsl::Vec3(1.0, 1.0, 1.0));
+  testLight1->setIntensity(1.0);
+  testLight1->setAttenuation(sf::Glsl::Vec3(1.0, 0.09, 0.032));
+  state->rayMarcher.addLight(testLight1);
+
+  testLight2 = new Light();
+  testLight2->setPosition(sf::Glsl::Vec3(0, -10, 0));
+  testLight2->setColor(sf::Glsl::Vec3(1.0, 0.0, 0.0));
+  testLight2->setIntensity(1.0);
+  testLight2->setAttenuation(sf::Glsl::Vec3(1.0, 0.09, 0.032));
+  state->rayMarcher.addLight(testLight2);
+
   //state->rayMarcher.update();
   testSphere = new Sphere();
   testSphere->setRadius(1.0);
   testSphere->setOffset(sf::Glsl::Vec3(0.0, 0.0, 0.0));
-  testSphere->setAmbient(sf::Glsl::Vec3(1.0, 0.0, 0.0));
   state->rayMarcher.addShape(testSphere);
 
   testSphere2 = new Sphere();
   testSphere2->setRadius(1.0);
   testSphere2->setOffset(sf::Glsl::Vec3(1.0, 0.0, 0.0));
-  testSphere2->setAmbient(sf::Glsl::Vec3(0.0, 0.0, 1.0));
   state->rayMarcher.addShape(testSphere2);
+
 
 
   testBox = new Box();
   testBox->setSize(sf::Glsl::Vec3(1.0, 2.0, 1.0));
-  testBox->setAmbient(sf::Glsl::Vec3(1.0, 0.8, 0.0));
   testBox->setOffset(sf::Glsl::Vec3(10.0, 2.0, 0.0));
   state->rayMarcher.addShape(testBox);
   
@@ -41,7 +53,6 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
     Sphere * newSphere = new Sphere();
     newSphere->setOffset(sf::Glsl::Vec3(randX, randY, randZ));
     newSphere->setRadius(0.5);
-    newSphere->setAmbient(sf::Glsl::Vec3(0.0, 0.9, 0.3));
     state->rayMarcher.addShape(newSphere);
     spheres.push_back(newSphere);
   }
@@ -60,15 +71,18 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
 RenderTester::~RenderTester() {
   console=NULL;
   state=NULL;
-  /*
+  
   delete testSphere;
   delete testSphere2;
   delete testBox;
 
+  delete testLight1;
+  delete testLight2;
+
   for (int i = 0; i < spheres.size(); i++) {
     delete spheres[i];
   }
-  */
+  
 }
 
 void RenderTester::handleScreensizeChange() {
@@ -92,15 +106,15 @@ void RenderTester::handleController() {
 void RenderTester::update(sf::RenderWindow * window) {
   testSphereOffset += state->deltaTime.asSeconds();
 
-  /*
+  
 
   testSphere2->setOffset(sf::Glsl::Vec3(std::sin(testSphereOffset)/2.0+1.5, 0, 0));
   state->rayMarcher.updateShape(testSphere2);
   testSphere->setOffset(sf::Glsl::Vec3(0.0, std::cos(testSphereOffset)+1, 0));
   state->rayMarcher.updateShape(testSphere);
 
-
-  for (int i = 0; i < 0; i++) {
+/*
+  for (int i = 0; i < 10; i++) {
     sf::Glsl::Vec3 curPos = spheres[i]->getPos();
     spheres[i]->setOffset(sf::Glsl::Vec3(curPos.x+std::sin(testSphereOffset), curPos.y+std::cos(testSphereOffset), curPos.z));
     //std::cout << spheres.size() << std::endl;

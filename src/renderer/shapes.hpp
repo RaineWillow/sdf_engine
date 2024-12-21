@@ -22,8 +22,8 @@ public:
       Pixel defaultParam;
       _params.push_back(defaultParam);
     }
-    setK(0);
-
+    setK(0.0);
+    _params[8].toNum(1.0);
     _writeData = new sf::Uint8[_paramsSize*4];
     _matName = "";
   }
@@ -32,8 +32,8 @@ public:
     delete[] _writeData;
   }
 
-  bool isPrimative() {
-    return _isPrimative;
+  bool isPrimitive() {
+    return _isPrimitive;
   }
 
   void setAddress(Pixel address) {
@@ -80,9 +80,9 @@ public:
     return _BVHTreeNode;
   }
 
-  void setPrimative(bool isPrimative) {
-    _isPrimative = isPrimative;
-    _params[0].toIBool(_isPrimative, _objectId);
+  void setPrimitive(bool isPrimitive) {
+    _isPrimitive = isPrimitive;
+    _params[0].toIBool(_isPrimitive, _objectId);
   }
 
   void setK(float K) {
@@ -171,6 +171,7 @@ public:
   }
 
   void updateParams(sf::Uint8 * &dataArray) {
+    updateBoundingBox();
     for (int i = 0; i < _paramsSize; i++) {
       _params[i].writeToArray(i, _writeData, _paramsSize);
     }
@@ -186,9 +187,9 @@ protected:
   bool _destroyed = false;
 
   int _objectId;
-  bool _isPrimative = false;
+  bool _isPrimitive = false;
 
-  float _K = 0.8;
+  float _K = 0.0;
   sf::Glsl::Vec3 _offset;
   sf::Glsl::Vec4 _qRot;
   sf::Glsl::Vec3 _cRot;
@@ -206,7 +207,7 @@ protected:
 
   void setObjectId(int id) {
     _objectId = id;
-    _params[0].toIBool(_isPrimative, _objectId);
+    _params[0].toIBool(_isPrimitive, _objectId);
   }
 
   int _paramsSize;
@@ -223,13 +224,12 @@ public:
 
   Sphere() : Shape() {
     this->setObjectId(0);
-    this->setPrimative(true);
+    this->setPrimitive(true);
   }
 
-  void setRadius(double radius) {
+  void setRadius(float radius) {
     _radius = radius;
     this->_params[26].toNum(_radius);
-    this->updateBoundingBox();
   }
 
   void updateMaxMinFromCenter() {
@@ -237,14 +237,14 @@ public:
     this->_minBound = sf::Glsl::Vec3(-_radius, -_radius, -_radius);
   }
 private:
-  double _radius;
+  float _radius;
 };
 
 class Box : public Shape {
 public:
   Box() : Shape() {
     this->setObjectId(1);
-    this->setPrimative(true);
+    this->setPrimitive(true);
   }
 
   void setSize(sf::Glsl::Vec3 size) {
@@ -252,7 +252,6 @@ public:
     this->_params[26].toNum(_size.x);
     this->_params[27].toNum(_size.y);
     this->_params[28].toNum(_size.z);
-    this->updateBoundingBox();
   }
 
   void updateMaxMinFromCenter() {

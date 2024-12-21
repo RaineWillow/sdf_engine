@@ -1,71 +1,28 @@
 #version 420 compatibility
 #extension GL_EXT_gpu_shader4 : enable
 
+#define MAX_MARCHING_STEPS 40
+#define PRECISION 0.01
 
 uniform vec2 u_resolution;
 
 //general object uniforms
 //uniform int numObjects; //the number of objects in the scene
 
+#define NULL_PTR_TYPE 0
+
+#define SHAPES_PTR_TYPE 1
 uniform sampler2D shapes;
 uniform vec2 shapesBufferResolution;
 uniform int shapesItemSize;
+uniform vec4 defaultMatPointer;
+uniform vec4 headLightPointer;
+uniform int numLights;
 
+#define BVH_PTR_TYPE 2
 uniform sampler2D BVHUnion;
 uniform vec2 BVHUnionBufferResolution;
 uniform int BVHUnionItemSize;
-
-const int MAX_MARCHING_STEPS = 40;
-
-int numShapeTests = 0;
-
-struct Material {
-  vec3 col;
-};
-
-struct Surface {
-  float sd;
-  Material mat;
-};
-
-struct Ray {
-  float sd;
-  Material mat;
-  bool hit;
-  int id;
-  bool altColor;
-  int numShapeTests;
-};
-
-
-
-vec3 transform(vec3 p, vec3 offset) {
-  return p-offset;
-}
-
-/*
-float fastLength(vec3 vec) {
-  return length(vec);
-}
-*/
-//memory access functions----------------------------------------------------------
-vec4 accessMemoryParameter(sampler2D inBuffer, int index, int parameter, vec2 bufferResolution, int itemSize) {
-  int maxIndexPerRow = int(bufferResolution.x/float(itemSize));
-
-  int rowPosition = index/maxIndexPerRow;
-  int colPosition = (index-rowPosition*maxIndexPerRow)*itemSize + parameter;
-
-  return texelFetch(inBuffer, ivec2(colPosition, rowPosition), 0);
-}
-
-vec4 accessShapeParameter(int index, int parameter) {
-  return accessMemoryParameter(shapes, index, parameter, shapesBufferResolution, shapesItemSize);
-}
-
-vec4 accessBVHUnionParameter(int index, int parameter) {
-  return accessMemoryParameter(BVHUnion, index, parameter, BVHUnionBufferResolution, BVHUnionItemSize);
-}
-//end------------------------------------------------------------------------------
 
 //memory conversion----------------------------------------------------------------
 struct dInt {
@@ -158,21 +115,104 @@ Pointer convertPixToPointer(vec4 pixel) {
 
 //end------------------------------------------------------------------------------
 
-//surface distance functions-------------------------------------------------------
-Surface sdSphere(vec3 p, float r, Material mat) {
-  return Surface(length(p) - r, mat);
+struct Material {
+  vec3 albedo;
+  float metallic;
+  float shine;
+  float reflectivity;
+  float opacity;
+  float IOR;
+};
+
+struct Surface {
+  vec3 normal;
+  Material mat;
+};
+
+struct RayResult {
+  vec3 p;
+  bool hit;
+  Pointer hitAddr;
+};
+
+struct Light {
+  vec3 position;
+  vec3 color;
+  float intensity;
+  vec3 attenuation;
+  Pointer next;
+};
+
+//quaternion transform functions---------------------------------------------------
+
+vec4 quat(in vec3 v, in float a)
+{
+  return vec4(v * sin(a / 2.0), cos(a / 2.0));
 }
 
-Surface sdBox(vec3 p, vec3 b, Material mat) {
-  vec3 q = abs(p) - b;
-  return Surface(length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0), mat);
+vec4 quat_inv(in vec4 q)
+{
+  return vec4(-q.xyz, q.w);
+}
+
+vec4 p2q(in vec3 p)
+{
+  return vec4(p, 0);
+}
+
+vec4 q_mul(in vec4 q1, in vec4 q2)
+{
+  return vec4(q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y, 
+              q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x, 
+              q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w, 
+              q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z);
+}
+
+vec3 rotateq(in vec3 p, in vec4 q)
+{
+  return q_mul(q_mul(q, p2q(p)), quat_inv(q)).xyz;
+}
+
+vec3 transform(vec3 p, vec3 offset, vec3 rotOrigin, vec4 quat) {
+  //first, transform p by the offset
+  p -= offset;
+  //then, rotate p, keeping in mind the rotation origin
+  p = rotateq(p-rotOrigin, quat) + rotOrigin;
+  return p;
+}
+//---------------------------------------------------------------------------------
+
+//memory access functions----------------------------------------------------------
+vec4 accessMemoryParameter(sampler2D inBuffer, int index, int parameter, vec2 bufferResolution, int itemSize) {
+  int maxIndexPerRow = int(bufferResolution.x/float(itemSize));
+
+  int rowPosition = index/maxIndexPerRow;
+  int colPosition = (index-rowPosition*maxIndexPerRow)*itemSize + parameter;
+
+  return texelFetch(inBuffer, ivec2(colPosition, rowPosition), 0);
+}
+
+vec4 accessShapeParameter(int index, int parameter) {
+  return accessMemoryParameter(shapes, index, parameter, shapesBufferResolution, shapesItemSize);
+}
+
+vec4 accessBVHUnionParameter(int index, int parameter) {
+  return accessMemoryParameter(BVHUnion, index, parameter, BVHUnionBufferResolution, BVHUnionItemSize);
 }
 //end------------------------------------------------------------------------------
 
-Ray rayUnion(Ray ray1, Ray ray2) {
-  if (ray2.sd < ray1.sd) return ray2;
-  return ray1;
+//Primitive signed distance functions----------------------------------------------
+#define SD_SPHERE 0
+float sdSphere(vec3 p, float r) {
+  return length(p) - r;
 }
+
+#define SD_BOX 1
+float sdBox(vec3 p, vec3 b) {
+  vec3 q = abs(p) - b;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+//end------------------------------------------------------------------------------
 
 //BVH Tree intersecting functions--------------------------------------------------
 vec2 boxIntersection( in vec3 ro, in vec3 rd, vec3 boxSize) 
@@ -212,7 +252,7 @@ struct AABB {
 };
 
 AABB getBoundingBoxFromPointer(Pointer item) {
-  if (item.type == 2) {
+  if (item.type == BVH_PTR_TYPE) {
     vec3 boxPos = vec3(
       convertPixToNum(accessBVHUnionParameter(item.address, 1)),
       convertPixToNum(accessBVHUnionParameter(item.address, 2)),
@@ -225,7 +265,7 @@ AABB getBoundingBoxFromPointer(Pointer item) {
     );
 
     return AABB(boxPos, boxSize);
-  } else if (item.type == 1) {
+  } else if (item.type == SHAPES_PTR_TYPE) {
     vec3 boxPos = vec3(
       convertPixToNum(accessShapeParameter(item.address, 2)) + convertPixToNum(accessShapeParameter(item.address, 12)), 
       convertPixToNum(accessShapeParameter(item.address, 3)) + convertPixToNum(accessShapeParameter(item.address, 13)), 
@@ -240,13 +280,11 @@ AABB getBoundingBoxFromPointer(Pointer item) {
     return AABB(boxPos, boxSize);
   }
 }
-
-float sdFloor(vec3 p) {
-  return p.y + 30.;
-}
 //end------------------------------------------------------------------------------
 
 //stack recursion defs-------------------------------------------------------------
+#define maxBVHStackSize 20
+
 struct BVHStackFrame {
   Pointer currentAddress;
   int children[8];
@@ -260,14 +298,12 @@ struct OrganizerFrame {
   int child;
 };
 
-const int maxStackSize = 50;
-
-BVHStackFrame BVHStack[maxStackSize];
+BVHStackFrame BVHStack[maxBVHStackSize];
 int itemsOnBVHStack = 0;
 
 
 void pushBVHStackFrame(Pointer newItem) {
-  if (itemsOnBVHStack < maxStackSize) {
+  if (itemsOnBVHStack < maxBVHStackSize) {
     BVHStack[itemsOnBVHStack] = BVHStackFrame(newItem, int[8](0, 0, 0, 0, 0, 0, 0, 0), 0, false);
     itemsOnBVHStack += 1;
   }
@@ -280,170 +316,225 @@ void popBVHStackFrame() {
 void clearBVHStack() {
   itemsOnBVHStack = 0;
 }
-//end------------------------------------------------------------------------------
 
-//Ray drawPrimative(vec3 p, float prec, int index);
+#define maxShapeStackSize 40
 
+struct ShapeStackFrame {
+  Pointer currentAddress;
+  vec3 pos;
+  int remainingChildren;
+  bool processed;
+};
 
-Ray drawObject(vec3 p, float prec, int index) {
+ShapeStackFrame shapeStack[maxShapeStackSize];
+int shapesOnShapeStack = 0;
 
-  iBool objectId = convertPixToIBool(accessShapeParameter(index, 0));
-  vec3 objOffset = vec3(convertPixToNum(accessShapeParameter(index, 2)), convertPixToNum(accessShapeParameter(index, 3)), convertPixToNum(accessShapeParameter(index, 4)));
-  Material objectMat = Material(convertPixToCol(accessShapeParameter(index, 18)));
-  if (objectId.val == 0) {
-    float objectRadius = convertPixToNum(accessShapeParameter(index, 35));
-    Surface obj = sdSphere(transform(p, objOffset), objectRadius, objectMat);
-    return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
-  } else if (objectId.val == 1) {
-    vec3 objectSize = vec3(
-      convertPixToNum(accessShapeParameter(index, 35)),
-      convertPixToNum(accessShapeParameter(index, 36)),
-      convertPixToNum(accessShapeParameter(index, 37))
-    );
-
-    Surface obj = sdBox(transform(p, objOffset), objectSize, objectMat);
-    return Ray(obj.sd, obj.mat, obj.sd <= prec, index, false, 0);
+void pushShapeStackFrame(Pointer newItem) {
+  if (shapesOnShapeStack < maxShapeStackSize) {
+    shapeStack[shapesOnShapeStack] = ShapeStackFrame(newItem, vec3(0), 0, false);
+    shapesOnShapeStack += 1;
   }
 }
 
-float distFromPoint(vec3 p, float boundRadius) {
-  Pointer root = Pointer(0, 2);
+void popShapeStackFrame() {
+  shapesOnShapeStack -= 1;
+}
 
-  pushBVHStackFrame(root);
-  float minDist = boundRadius;
-  while (itemsOnBVHStack > 0) {
-    int pointerPosition = itemsOnBVHStack-1;
-    Pointer currentItem = BVHStack[pointerPosition].currentAddress;
+void clearShapeStack() {
+  shapesOnShapeStack = 0;
+}
 
-    if (BVHStack[pointerPosition].processed) {
-      int remainingChildren = BVHStack[pointerPosition].remainingChildren;
-      if (remainingChildren > 0) {
-        Pointer nextChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, BVHStack[pointerPosition].children[remainingChildren-1]));
-        pushBVHStackFrame(nextChild);
-        BVHStack[pointerPosition].remainingChildren -= 1;
-      } else {
-        popBVHStackFrame();
-      }
-    } else if (currentItem.type == 2) {
-      vec3 boxPos = vec3(
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 1)),
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 2)),
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 3))
-      );
-      vec3 boxSize = vec3(
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 4)),
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 5)),
-        convertPixToNum(accessBVHUnionParameter(currentItem.address, 6))
-      );
+//end------------------------------------------------------------------------------
 
-      float distToBox = sdAxisBox(p-boxPos, boxSize);
+Material materialFromPointer(Pointer matPointer) {
+  vec3 albedo = convertPixToCol(accessShapeParameter(matPointer.address, 0));
+  float metallic = convertPixToNum(accessShapeParameter(matPointer.address, 1));
+  float shine = convertPixToNum(accessShapeParameter(matPointer.address, 2));
+  float reflectivity = convertPixToNum(accessShapeParameter(matPointer.address, 3));
+  float opacity = convertPixToNum(accessShapeParameter(matPointer.address, 4));
+  float IOR = convertPixToNum(accessShapeParameter(matPointer.address, 5));
 
-      if (distToBox < 0.5) {
-        for (int i = 0; i < 8; i++) {
-          Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
-          if (currentChild.type != 0) {
-            BVHStack[pointerPosition].children[BVHStack[pointerPosition].remainingChildren] = 7+i;
-            BVHStack[pointerPosition].remainingChildren += 1;
-          }
-        }
+  return Material(albedo, metallic, shine, reflectivity, opacity, IOR);
+}
 
-        BVHStack[pointerPosition].processed = true;
-      } else {
-        minDist = min(minDist, distToBox);
+Light lightFromPointer(Pointer lightPointer) {
+  vec3 position = vec3(
+    convertPixToNum(accessShapeParameter(lightPointer.address, 0)),
+    convertPixToNum(accessShapeParameter(lightPointer.address, 1)),
+    convertPixToNum(accessShapeParameter(lightPointer.address, 2))
+  );
 
-        popBVHStackFrame();
-      }
-    } else if (currentItem.type == 1) {
-      minDist = min(minDist, drawObject(p, 0.01, currentItem.address).sd);
-      popBVHStackFrame();
-    }
+  vec3 color = convertPixToCol(accessShapeParameter(lightPointer.address, 3));
+  float intensity = convertPixToNum(accessShapeParameter(lightPointer.address, 4));
+
+  vec3 attenuation = vec3(
+    convertPixToNum(accessShapeParameter(lightPointer.address, 5)),
+    convertPixToNum(accessShapeParameter(lightPointer.address, 6)),
+    convertPixToNum(accessShapeParameter(lightPointer.address, 7))
+  );
+
+  Pointer next = convertPixToPointer(accessShapeParameter(lightPointer.address, 8));
+
+  return Light(position, color, intensity, attenuation, next);
+}
+
+float sdPrimitive(vec3 p, Pointer currentShape, int objID, float boundRadius) {
+  vec4 param_26 = accessShapeParameter(currentShape.address, 26);
+  vec4 param_27 = accessShapeParameter(currentShape.address, 27);
+  vec4 param_28 = accessShapeParameter(currentShape.address, 28);
+  
+
+  if (objID == SD_SPHERE) {
+    float sphereRadius = convertPixToNum(param_26);
+    return sdSphere(p, sphereRadius);
+  } else if (objID == SD_BOX) {
+    vec3 boxSize = vec3(
+      convertPixToNum(param_26),
+      convertPixToNum(param_27),
+      convertPixToNum(param_28)
+    );
+    return sdBox(p, boxSize);
   }
 
-  clearBVHStack();
+  return boundRadius;
+}
 
+float sdPrimitiveWithTransform(vec3 p, Pointer currentShape, float boundRadius) {
+
+  int objID = convertPixToIBool(accessShapeParameter(currentShape.address, 0)).val;
+  
+  
+  vec3 objOffset = vec3(
+    convertPixToNum(accessShapeParameter(currentShape.address, 2)),
+    convertPixToNum(accessShapeParameter(currentShape.address, 3)),
+    convertPixToNum(accessShapeParameter(currentShape.address, 4))
+  );
+
+  vec4 shapeQuat = vec4(
+    convertPixToNum(accessShapeParameter(currentShape.address, 5)),
+    convertPixToNum(accessShapeParameter(currentShape.address, 6)),
+    convertPixToNum(accessShapeParameter(currentShape.address, 7)),
+    convertPixToNum(accessShapeParameter(currentShape.address, 8))
+  );
+
+  vec3 rotOrigin = vec3(
+    convertPixToNum(accessShapeParameter(currentShape.address, 9)),
+    convertPixToNum(accessShapeParameter(currentShape.address, 10)),
+    convertPixToNum(accessShapeParameter(currentShape.address, 11))
+  );
+
+  p = transform(p, objOffset, rotOrigin, shapeQuat);
+  
+  return sdPrimitive(p, currentShape, objID, boundRadius);
+}
+
+float sdShapeNode(vec3 p, Pointer address, float boundRadius) {
+  
+  pushShapeStackFrame(address);
+
+  float minDist = boundRadius;
+
+  while (shapesOnShapeStack > 0) {
+    int stackPointer = shapesOnShapeStack-1;
+
+    Pointer currentShape = shapeStack[stackPointer].currentAddress;
+    iBool objectId = convertPixToIBool(accessShapeParameter(currentShape.address, 0));
+    
+    
+    //check to see if the node is a primative node
+    if (objectId.truth) {
+      minDist = sdPrimitiveWithTransform(p, currentShape, boundRadius);
+      popShapeStackFrame();
+    } else if (shapeStack[stackPointer].processed) {
+      
+      //we only want to continue processing the stack frame if it has remaining children:
+      if (shapeStack[stackPointer].remainingChildren > 0) {
+        p = shapeStack[stackPointer].pos;
+      } else {
+        popShapeStackFrame();
+      }
+    } else {
+      vec3 objOffset = vec3(
+        convertPixToNum(accessShapeParameter(currentShape.address, 2)),
+        convertPixToNum(accessShapeParameter(currentShape.address, 3)),
+        convertPixToNum(accessShapeParameter(currentShape.address, 4))
+      );
+
+      vec4 shapeQuat = vec4(
+        convertPixToNum(accessShapeParameter(currentShape.address, 5)),
+        convertPixToNum(accessShapeParameter(currentShape.address, 6)),
+        convertPixToNum(accessShapeParameter(currentShape.address, 7)),
+        convertPixToNum(accessShapeParameter(currentShape.address, 8))
+      );
+
+      vec3 rotOrigin = vec3(
+        convertPixToNum(accessShapeParameter(currentShape.address, 9)),
+        convertPixToNum(accessShapeParameter(currentShape.address, 10)),
+        convertPixToNum(accessShapeParameter(currentShape.address, 11))
+      );
+
+      shapeStack[stackPointer].pos = transform(p, objOffset, rotOrigin, shapeQuat);
+    }
+  }
+  clearShapeStack();
   return minDist;
 }
 
-vec3 calcNormal(vec3 p, float prec, int index) {
-    vec2 e = vec2(1.0, -1.0) * 0.0005; // epsilon
-    return normalize(
-      e.xyy * drawObject(p + e.xyy, prec, index).sd +
-      e.yyx * drawObject(p + e.yyx, prec, index).sd +
-      e.yxy * drawObject(p + e.yxy, prec, index).sd +
-      e.xxx * drawObject(p + e.xxx, prec, index).sd
-    );
-}
-
-vec3 calcNormalPrecise(vec3 p, float boundRadius) {
-    vec2 e = vec2(1.0, -1.0) * 0.0005; // epsilon
-    return normalize(
-      e.xyy * distFromPoint(p + e.xyy, boundRadius) +
-      e.yyx * distFromPoint(p + e.yyx, boundRadius) +
-      e.yxy * distFromPoint(p + e.yxy, boundRadius) +
-      e.xxx * distFromPoint(p + e.xxx, boundRadius)
-    );
-}
-
-Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
-  Material defaultColor = Material(backgroundColor);
-  Ray closest = Ray(boundRadius, defaultColor, false, -1, false, 0);
+RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
   vec3 p = ro;
 
   vec3 m = 1.0/rd;
 
   Pointer root = Pointer(0, 2);
+
+  bool hit = false;
+
+  Pointer hitAddr;
+
   AABB rootBound = getBoundingBoxFromPointer(root);
+
   if (boxIntersectionPrecomupute(p-rootBound.pos, rd, rootBound.bound, m).y != -1.0) {
     pushBVHStackFrame(root);
   }
-  
-  int numIterations = 0;
 
-  int numHits = 0;
-
-  float lastDepth = boundRadius;
-  
+  float depth = boundRadius;
 
   while (itemsOnBVHStack > 0) {
-    int pointerPosition = itemsOnBVHStack-1;
-    Pointer currentItem = BVHStack[pointerPosition].currentAddress;
+    int stackPointer = itemsOnBVHStack-1;
+    Pointer currentItem = BVHStack[stackPointer].currentAddress;
 
-    if (BVHStack[pointerPosition].processed) {
-      int remainingChildren = BVHStack[pointerPosition].remainingChildren;
+    if (BVHStack[stackPointer].processed) {
+      int remainingChildren = BVHStack[stackPointer].remainingChildren;
       if (remainingChildren > 0) {
-        Pointer nextChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, BVHStack[pointerPosition].children[remainingChildren-1]));
+        Pointer nextChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, BVHStack[stackPointer].children[remainingChildren-1]));
         pushBVHStackFrame(nextChild);
-        BVHStack[pointerPosition].remainingChildren -= 1;
+        BVHStack[stackPointer].remainingChildren -= 1;
       } else {
         popBVHStackFrame();
       }
-    } else if (currentItem.type == 2) { //the item is a aabb
+    } else if (currentItem.type == BVH_PTR_TYPE) {
       OrganizerFrame data[8];
       int closestPos = 0;
       int numChildren = 0;
 
       for (int i = 0; i < 8; i++) {
         Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
-        if (currentChild.type != 0) {
+        if (currentChild.type != NULL_PTR_TYPE) {
           AABB currentBound = getBoundingBoxFromPointer(currentChild);
-          if (boxIntersectionPrecomupute(p-currentBound.pos, rd, currentBound.bound, m).y != -1.0) {
-            numHits += 1;
-            float dist;
-            if (currentChild.type == 1) {
-              dist = drawObject(p, 0.01, currentChild.address).sd;
-            } else {
-              dist = sdAxisBox(p-currentBound.pos, currentBound.bound);
-            }
+          float dist = sdAxisBox(p-currentBound.pos, currentBound.bound);
+          if (boxIntersectionPrecomupute(p-currentBound.pos, rd, currentBound.bound, m).y != -1.0 && dist < boundRadius) {
             int foundPos = closestPos;
             data[numChildren] = OrganizerFrame(-1, dist, 7+i);
+
             int nextClosest = closestPos;
-            for (int i = 0; i < numChildren; i++) {
+
+            for (int j = 0; j < numChildren; j++) {
               if (data[closestPos].dist >= dist) {
                 data[numChildren].next = closestPos;
                 closestPos = numChildren;
                 break;
               }
-              
+
               if (data[nextClosest].dist <= dist) {
                 if (data[nextClosest].next == -1) {
                   data[nextClosest].next=numChildren;
@@ -456,140 +547,126 @@ Ray rayMarch(vec3 ro, vec3 rd, float boundRadius, vec3 backgroundColor) {
                   nextClosest = data[nextClosest].next;
                 }
               }
-              
             }
-            numChildren+=1;
+            numChildren += 1;
           }
         }
       }
 
-      BVHStack[pointerPosition].remainingChildren = numChildren;
+      BVHStack[stackPointer].remainingChildren = numChildren;
       int nextClosest = closestPos;
+
       for (int i = 0; i < numChildren; i++) {
         int currentChild = data[nextClosest].child;
-        BVHStack[pointerPosition].children[numChildren-1-i] = currentChild;
+        BVHStack[stackPointer].children[numChildren-1-i] = currentChild;
         nextClosest = data[nextClosest].next;
       }
 
-      BVHStack[pointerPosition].processed=true;
-    } else if (currentItem.type == 1) { //the item is a shape
-      int i = currentItem.address;
-      /*
-      vec3 objPos = vec3(
-        convertPixToNum(accessShapeParameter(i, 2)) + convertPixToNum(accessShapeParameter(i, 12)), 
-        convertPixToNum(accessShapeParameter(i, 3)) + convertPixToNum(accessShapeParameter(i, 13)), 
-        convertPixToNum(accessShapeParameter(i, 4)) + convertPixToNum(accessShapeParameter(i, 14))
-      );
-      
-      //vec3 objPos = vec3(convertPixToNum(accessShapeParameter(i, 2)), convertPixToNum(accessShapeParameter(i, 3)), convertPixToNum(accessShapeParameter(i, 4)));
-      vec3 objBound = vec3(convertPixToNum(accessShapeParameter(i, 15)), convertPixToNum(accessShapeParameter(i, 16)), convertPixToNum(accessShapeParameter(i, 17)));
-
-      */
-
+      BVHStack[stackPointer].processed = true;
+    } else if (currentItem.type == SHAPES_PTR_TYPE) {
       AABB objectBound = getBoundingBoxFromPointer(currentItem);
 
       vec2 intersectionPoints = boxIntersectionPrecomupute(p - objectBound.pos, rd, objectBound.bound, m);
-      float depth = max(intersectionPoints.x, 0.0);
-      if (intersectionPoints.y != -1.0 && lastDepth > depth) {
+
+      float currentDepth = max(intersectionPoints.x, 0.0);
+
+      if (depth >= currentDepth) {
         float maxDist = intersectionPoints.y;
-        Ray nextClosest = Ray(boundRadius, defaultColor, false, -1, false, 0);
-        for (int j = 0; j < MAX_MARCHING_STEPS; j++) {
-          nextClosest = rayUnion(nextClosest, drawObject(p+depth*rd, 0.01, i));
-          if (depth >= maxDist || depth >= lastDepth) {
+        float lastDist = boundRadius;
+        float numREPEATS = 0.0;
+        for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
+          float dist = sdShapeNode(p + currentDepth * rd, currentItem, boundRadius);
+          //float dist = sdPrimitiveWithTransform(p+currentDepth*rd, currentItem, boundRadius);
+          //pushShapeStackFrame(currentItem);
+          //popShapeStackFrame();
+          if (currentDepth >= maxDist || currentDepth >= depth || lastDist < dist) {
             break;
-          } else if (nextClosest.hit) {
-            if (depth < lastDepth) {
-              closest = nextClosest;
-              lastDepth = depth;
+          } else if (dist <= PRECISION) {
+            if (currentDepth <= depth) {
+              hit = true;
+              hitAddr = currentItem;
+              //hit = numREPEATS/float(MAX_MARCHING_STEPS);
+              depth = currentDepth;
             }
             break;
-          } else {
-            depth += nextClosest.sd;
           }
+
+          currentDepth += dist;
+          lastDist = dist;
         }
+        //hit = numREPEATS/float(MAX_MARCHING_STEPS);
       }
+      
       popBVHStackFrame();
     }
   }
 
   clearBVHStack();
 
-  
-  if (closest.hit) {
-    p = p+lastDepth*rd;
-    //vec3 normal = calcNormalPrecise(p, boundRadius);
-    vec3 normal = calcNormal(p, 0.01, closest.id);
-    vec3 lightPosition = ro;
-    vec3 lightDirection = normalize(lightPosition-p);
-    float dif = clamp(dot(normal, lightDirection), 0.1, 1.);
-    closest.mat.col*=dif;
-  } else {
-    if (!closest.altColor) {
-      closest.mat.col = backgroundColor;
-    }
+  return RayResult(p + rd*depth, hit, hitAddr);
+}
+
+vec3 calcNormal(vec3 p, Pointer address, float boundRadius) {
+  vec2 e = vec2(1.0, -1.0) * 0.0005; //epsilon
+
+  return normalize(
+    e.xyy * sdShapeNode(p + e.xyy, address, boundRadius) +
+    e.yyx * sdShapeNode(p + e.yyx, address, boundRadius) +
+    e.yxy * sdShapeNode(p + e.yxy, address, boundRadius) +
+    e.xxx * sdShapeNode(p + e.xxx, address, boundRadius)
+  );
+}
+
+vec3 calcLights(vec3 p, vec3 normal, vec3 rd, Material mat) {
+  Pointer next = convertPixToPointer(headLightPointer);
+  vec3 ambientLight = vec3(0.0);
+  vec3 partialLight = vec3(0.0);
+
+  while (next.type != NULL_PTR_TYPE) {
+    Light nextLight = lightFromPointer(next);
+
+    float lightDist = length(nextLight.position - p);
+    float attenuation = 1.0 / (nextLight.attenuation.x + nextLight.attenuation.y * lightDist + nextLight.attenuation.z * lightDist * lightDist);
+
+    vec3 lightDir = normalize(nextLight.position - p);
+
+    //begin generating the ambient component
+    ambientLight += nextLight.color * nextLight.intensity;
+
+    float dotLN = clamp(dot(lightDir, normal), 0., 1.);
+    vec3 diffuse = mat.albedo * nextLight.color * dotLN;
+
+    float dotRV = clamp(dot(reflect(lightDir, normal), -rd), 0., 1.);
+    vec3 specular = nextLight.color * pow(dotRV, mat.shine);
+
+    partialLight += attenuation * (diffuse + specular);
+
+    next = nextLight.next;
   }
-  /*
-  if (numHits > 0) {
 
-    vec3 colors[10];
+  ambientLight = ambientLight * mat.albedo * 0.2;
 
-    colors[0] = vec3(1, 0, 0);
-    colors[1] = vec3(0, 1, 0);
-    colors[2] = vec3(0, 0, 1);
-    colors[3] = vec3(1, 1, 0);
-    colors[4] = vec3(1, 0, 1);
-    colors[5] = vec3(0, 1, 1);
-    colors[6] = vec3(0.9, 0.7, 0.2);
-    colors[7] = vec3(0.2, 0.9, 0.7);
-    colors[8] = vec3(0.7, 0.9, 0.2);
-    colors[9] = vec3(0.7, 0.2, 0.9);
-    closest.mat.col = mix(closest.mat.col, colors[mod(numHits, 10)], 0.5);
-  }
-*/
-  //closest.mat.col = mix(closest.mat.col, vec3(min(float(numHits), 500)/500.0, 0, 0), 0.9);
-  
-  /*
-  float shapesTested = float(numHits)/200.0;
-
-  closest.mat.col=vec3(0.0);
-  closest.mat.col.g = shapesTested;
-  closest.hit=true;
-  */
-  return closest;
+  return clamp(ambientLight + partialLight, vec3(0.0), vec3(1.0));
 }
 
 void main() {
   vec2 uv = (gl_FragCoord.xy-.5*u_resolution.xy)/u_resolution.y;
-  vec3 backgroundColor = vec3(0.5, 0.5, 1.0);
+  vec3 backgroundColor = vec3(0.0, 0.0, 0.0);
 
-  vec3 col = vec3(0);
+  vec3 col = backgroundColor;
 
-  vec3 ro = vec3(0, 0, -40);
+  vec3 ro = vec3(0, 0, -20);
   vec3 rd = normalize(vec3(uv, 1.2));
 
+  RayResult foundIntersection = castRay(ro, rd, 2000.);
 
-  Ray result = rayMarch(ro, rd, 2000., backgroundColor);
-  col = result.mat.col;
-  if (result.hit) {
-    col = pow(col, vec3(0.7));
-  }
+  if (foundIntersection.hit==true) {
+    vec3 normal = calcNormal(foundIntersection.p, foundIntersection.hitAddr, 2000.);
 
-  /*
-  vec2 bCheck = boxIntersection(ro-ro, rd, vec3(10.0, 10.0, 10.0));
-  if (bCheck.y > 14.0) {
-    col = vec3(0., 1., 0.);
-  } else {
-    col = vec3(1.0, 0.0, 0.0);
-  }
-  */
-/*
-  if (convertPixToNum(accessShapeParameter(1, 2)) == 4.0) {
-    col = vec3(0.0, 1.0, 0.0);
-  } else {
-    col = vec3(1.0, 0.0, 0.0);
-  }
-*/
+    Material hitMat = materialFromPointer(convertPixToPointer(defaultMatPointer));
 
+    col = calcLights(foundIntersection.p, normal, rd, hitMat);
+  }
 
   gl_FragColor = vec4(col, 1.0);
 }

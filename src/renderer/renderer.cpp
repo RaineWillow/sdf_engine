@@ -73,6 +73,18 @@ std::vector<std::string> Renderer::getMaterials() {
   return _shapesContainer.getMaterials();
 }
 
+void Renderer::addLight(Light * light) {
+  _shapesContainer.addLight(light, _marcher);
+}
+
+void Renderer::destroyLight(Light * light) {
+  _shapesContainer.destroyLight(light, _marcher);
+}
+
+void Renderer::updateLight(Light * light) {
+  _shapesContainer.updateLight(light);
+}
+
 void Renderer::update() {
   
   _shapesContainer.update();

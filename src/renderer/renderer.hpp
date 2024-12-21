@@ -12,6 +12,7 @@
 #include "shapes_container.hpp"
 #include "BVH_tree.hpp"
 #include "material.hpp"
+#include "light.hpp"
 #include <chrono>
 
 class Renderer {
@@ -29,6 +30,10 @@ public:
 
   void setMaterial(Shape * shape, std::string name);
   std::vector<std::string> getMaterials();
+
+  void addLight(Light * light);
+  void destroyLight(Light * light);
+  void updateLight(Light * light);
 
   void update();
 

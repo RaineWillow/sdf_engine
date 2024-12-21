@@ -3,9 +3,7 @@
 ShapesContainer::ShapesContainer(int memoryBufferId) : _memoryBuffer(150, 7200, 52, memoryBufferId),
 _defaultMat("default") {
 
-  _defaultMat.setAmbient(sf::Glsl::Vec3(0.5, 0.5, 0.5));
-  _defaultMat.setDiffuse(sf::Glsl::Vec3(0.5, 0.5, 0.5));
-  _defaultMat.setSpecular(sf::Glsl::Vec3(0.0, 0.0, 0.0));
+  _defaultMat.setAlbedo(sf::Glsl::Vec3(0.5, 0.5, 0.5));
   _defaultMat.setShine(1.0);
   Pixel defaultAddress = _memoryBuffer.newItem();
   _defaultMat.setAddress(defaultAddress);
@@ -81,15 +79,20 @@ void ShapesContainer::removeMaterial(std::string name) {
     _memoryBuffer.writeItem(_materials[name].shapeWithMat[i]->getAddress().pointerIndex(), _writeBuffer);
   }
 
+  _memoryBuffer.freeItem(_materials[name].mat.getAddress().pointerIndex());
+
   //remove the material
   _materials.erase(name);
 }
 
 void ShapesContainer::addShape(Shape * shape) {
-  Pixel newAddress = _memoryBuffer.newItem();
+  if (!shape->getAddress().isNullPointer()) {
+    throw std::invalid_argument("You should not add a shape which has already been added!");
+  }
 
+  Pixel newAddress = _memoryBuffer.newItem();
   //if the shape already has a material, try to go ahead and set it
-  if (_materials.find(shape->getMaterial()) == _materials.end()) {
+  if (_materials.find(shape->getMaterial()) != _materials.end()) {
     setMaterial(shape, shape->getMaterial());
   } else { //otherwise, just give it the default material
     shape->setMaterial(_defaultMat.getAddress(), _defaultMat.getName());
@@ -102,8 +105,14 @@ void ShapesContainer::addShape(Shape * shape) {
 }
 
 void ShapesContainer::destroyShape(Shape * shape) {
+
+  if (shape->getAddress().isNullPointer()) {
+    throw std::invalid_argument("Attempted to remove a shape before adding it!");
+  }
   //free the shape from the memory buffer
   _memoryBuffer.freeItem(shape->getAddress().pointerIndex());
+  Pixel NULLPTR;
+  shape->setAddress(NULLPTR);
 
   //if the shape has a material in the material buffer
   if (_materials.find(shape->getMaterial()) != _materials.end()) {
@@ -117,6 +126,9 @@ void ShapesContainer::destroyShape(Shape * shape) {
 }
 
 void ShapesContainer::updateShape(Shape * shape) {
+  if (shape->getAddress().isNullPointer()) {
+    throw std::invalid_argument("Attempted to update a shape before adding it!");
+  }
   shape->updateParams(_writeBuffer);
   _memoryBuffer.writeItem(shape->getAddress().pointerIndex(), _writeBuffer);
 }
@@ -172,7 +184,78 @@ std::vector<std::string> ShapesContainer::getMaterials() {
   return materialNames;
 }
 
+void ShapesContainer::addLight(Light * light, sf::Shader & shader) {
+
+  if (std::find(_lights.begin(), _lights.end(), light) != _lights.end()) {
+    throw std::invalid_argument("Attempted to readd a light which has already been added (try making a copy of it if you need to)");
+  }
+  Pixel newAddress = _memoryBuffer.newItem();
+  light->setAddress(newAddress);
+
+  _lights.push_back(light);
+
+  for (int i = 0; i < _lights.size(); i++) {
+    if (i < _lights.size()-1) {
+      _lights[i]->setNext(_lights[i+1]->getAddress());
+    } else {
+      Pixel NULLPTR;
+      _lights[i]->setNext(NULLPTR);
+    }
+
+    _lights[i]->updateParams(_writeBuffer);
+    _memoryBuffer.writeItem(_lights[i]->getAddress().pointerIndex(), _writeBuffer);
+  }
+
+  shader.setUniform("numLights", (int)_lights.size());
+  shader.setUniform("headLightPointer", _lights[0]->getAddress().asVec4());
+}
+
+void ShapesContainer::destroyLight(Light * light, sf::Shader & shader) {
+  auto it = std::find(_lights.begin(), _lights.end(), light);
+
+  if (it == _lights.end()) {
+    throw std::invalid_argument("Error! Attempted to remove a light that has not yet been added!");
+    return;
+  }
+
+  _memoryBuffer.freeItem(light->getAddress().pointerIndex());
+
+  _lights.erase(it);
+
+  for (int i = 0; i < _lights.size(); i++) {
+    if (i < _lights.size()-1) {
+      _lights[i]->setNext(_lights[i+1]->getAddress());
+    } else {
+      Pixel NULLPTR;
+      _lights[i]->setNext(NULLPTR);
+    }
+
+    _lights[i]->updateParams(_writeBuffer);
+    _memoryBuffer.writeItem(_lights[i]->getAddress().pointerIndex(), _writeBuffer);
+  }
+
+  shader.setUniform("numLights", (int)_lights.size());
+  if (_lights.size() > 0) {
+    shader.setUniform("headLightPointer", _lights[0]->getAddress().asVec4());
+  } else {
+    Pixel NULLPTR;
+    shader.setUniform("headLightPointer", NULLPTR.asVec4());
+  }
+}
+
+void ShapesContainer::updateLight(Light * light) {
+  if (std::find(_lights.begin(), _lights.end(), light) == _lights.end()) {
+    throw std::invalid_argument("Attempted to update a light which has not been added and has no pointer!");
+  }
+  light->updateParams(_writeBuffer);
+  _memoryBuffer.writeItem(light->getAddress().pointerIndex(), _writeBuffer);
+}
+
 void ShapesContainer::bind(sf::Shader & shader, std::string bufferName) {
+  shader.setUniform("defaultMatPointer", _defaultMat.getAddress().asVec4());
+  shader.setUniform("numLights", 0);
+  Pixel NULLPTR;
+  shader.setUniform("headLightPointer", NULLPTR.asVec4());
   _memoryBuffer.bind(shader, bufferName);
 }
 

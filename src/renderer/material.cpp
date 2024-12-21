@@ -40,37 +40,32 @@ void Material::updateParams(sf::Uint8 * &dataArray) {
   dataArray = _writeData;
 }
 
-void Material::setAmbient(sf::Glsl::Vec3 ambient) {
-  _ambient = ambient;
-  _params[0].toColor(_ambient);
+void Material::setAlbedo(sf::Glsl::Vec3 albedo) {
+  _albedo = albedo;
+  _params[0].toColor(_albedo);
 }
 
-void Material::setDiffuse(sf::Glsl::Vec3 diffuse) {
-  _diffuse = diffuse;
-  _params[1].toColor(_diffuse);
-}
-
-void Material::setSpecular(sf::Glsl::Vec3 specular) {
-  _specular = specular;
-  _params[2].toColor(_specular);
+void Material::setMetallic(float metallic) {
+  _metallic = metallic;
+  _params[1].toNum(_metallic);
 }
 
 void Material::setShine(float shine) {
   _shine = shine;
-  _params[3].toNum(_shine);
+  _params[2].toNum(_shine);
 }
 
 void Material::setReflectivity(float reflectivity) {
   _reflectivity = reflectivity;
-  _params[4].toNum(_reflectivity);
+  _params[3].toNum(_reflectivity);
 }
 
 void Material::setOpacity(float opacity) {
   _opacity = opacity;
-  _params[5].toNum(_opacity);
+  _params[4].toNum(_opacity);
 }
 
 void Material::setIOR(float IOR) {
   _IOR = IOR;
-  _params[6].toNum(_IOR);
+  _params[5].toNum(_IOR);
 }

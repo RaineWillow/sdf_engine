@@ -15,6 +15,7 @@
 #include "memory/shader_memory_buffer.hpp"
 #include "shapes.hpp"
 #include "material.hpp"
+#include "light.hpp"
 
 struct MaterialEntry {
   Material mat;
@@ -38,6 +39,10 @@ public:
   void setMaterial(Shape * shape, std::string name);
   std::vector<std::string> getMaterials();
 
+  void addLight(Light * light, sf::Shader & shader);
+  void destroyLight(Light * light, sf::Shader & shader);
+  void updateLight(Light * light);
+
   void bind(sf::Shader & shader, std::string bufferName);
 
   void update();
@@ -48,6 +53,8 @@ private:
   sf::Uint8 * _writeBuffer;
 
   std::unordered_map<std::string, MaterialEntry> _materials;
+
+  std::vector<Light*> _lights;
 
   Material _defaultMat;
 };

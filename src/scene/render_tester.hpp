@@ -13,6 +13,7 @@
 #include "../core/state.hpp"
 #include "../core/console.hpp"
 #include "../renderer/shapes.hpp"
+#include "../renderer/light.hpp"
 
 class RenderTester : public Scene {
 public:
@@ -30,6 +31,9 @@ private:
   Sphere * testSphere;
   Sphere * testSphere2;
   Box * testBox;
+
+  Light * testLight1;
+  Light * testLight2;
 
   sf::View _renderView;
 

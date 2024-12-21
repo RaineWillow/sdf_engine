@@ -22,17 +22,15 @@ public:
 
   void updateParams(sf::Uint8 * &dataArray);
 
-  void setAmbient(sf::Glsl::Vec3 ambient);
-  void setDiffuse(sf::Glsl::Vec3 diffuse);
-  void setSpecular(sf::Glsl::Vec3 specular);
+  void setAlbedo(sf::Glsl::Vec3 ambient);
+  void setMetallic(float metallic);
   void setShine(float shine);
   void setReflectivity(float reflectivity);
   void setOpacity(float opacity);
   void setIOR(float IOR);
 
-  sf::Glsl::Vec3 getAmbient();
-  sf::Glsl::Vec3 getDiffuse();
-  sf::Glsl::Vec3 getSpecular();
+  sf::Glsl::Vec3 getAlbedo();
+  float getMetallic();
   float getShine();
   float getReflectivity();
   float getOpacity();
@@ -46,9 +44,8 @@ private:
   std::vector<Pixel> _params;
   int _paramsSize;
 
-  sf::Glsl::Vec3 _ambient;
-  sf::Glsl::Vec3 _diffuse;
-  sf::Glsl::Vec3 _specular;
+  sf::Glsl::Vec3 _albedo;
+  float _metallic;
   float _shine;
   float _reflectivity;
   float _opacity;
