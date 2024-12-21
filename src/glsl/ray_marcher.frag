@@ -668,7 +668,7 @@ vec3 calcLights(vec3 p, vec3 normal, vec3 rd, Material mat) {
     Light nextLight = lightFromPointer(next);
 
     float lightDist = length(nextLight.position - p);
-    float attenuation = 1.0; // (nextLight.attenuation.x + nextLight.attenuation.y * lightDist + nextLight.attenuation.z * lightDist * lightDist);
+    float attenuation = 1.0 / (nextLight.attenuation.x + nextLight.attenuation.y * lightDist + nextLight.attenuation.z * lightDist * lightDist);
 
     vec3 lightDir = normalize(nextLight.position - p);
 
