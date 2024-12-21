@@ -442,10 +442,11 @@ float sdShapeNode(vec3 p, Pointer address, float boundRadius) {
     
     
     //check to see if the node is a primative node
-    if (objectId.truth) {
-      minDist = sdPrimitiveWithTransform(p, currentShape, boundRadius);
-      popShapeStackFrame();
-    } else if (shapeStack[stackPointer].processed) {
+
+    minDist = min(minDist, objectId.truth ? sdPrimitiveWithTransform(p, currentShape, boundRadius) : 0.0);
+    shapesOnShapeStack = objectId.truth ? shapesOnShapeStack - 1 : shapesOnShapeStack;
+/*s 
+    if (shapeStack[stackPointer].processed) {
       
       //we only want to continue processing the stack frame if it has remaining children:
       if (shapeStack[stackPointer].remainingChildren > 0) {
@@ -453,7 +454,46 @@ float sdShapeNode(vec3 p, Pointer address, float boundRadius) {
       } else {
         popShapeStackFrame();
       }
-    } else {
+    }
+
+/*
+    else {
+      
+      
+      if (shapeStack[stackPointer].processed) {
+      
+      //we only want to continue processing the stack frame if it has remaining children:
+        if (shapeStack[stackPointer].remainingChildren > 0) {
+          p = shapeStack[stackPointer].pos;
+        } else {
+          popShapeStackFrame();
+        }
+      } else {
+
+        vec3 objOffset = vec3(
+          convertPixToNum(accessShapeParameter(currentShape.address, 2)),
+          convertPixToNum(accessShapeParameter(currentShape.address, 3)),
+          convertPixToNum(accessShapeParameter(currentShape.address, 4))
+        );
+
+        vec4 shapeQuat = vec4(
+          convertPixToNum(accessShapeParameter(currentShape.address, 5)),
+          convertPixToNum(accessShapeParameter(currentShape.address, 6)),
+          convertPixToNum(accessShapeParameter(currentShape.address, 7)),
+          convertPixToNum(accessShapeParameter(currentShape.address, 8))
+        );
+
+        vec3 rotOrigin = vec3(
+          convertPixToNum(accessShapeParameter(currentShape.address, 9)),
+          convertPixToNum(accessShapeParameter(currentShape.address, 10)),
+          convertPixToNum(accessShapeParameter(currentShape.address, 11))
+        );
+
+        shapeStack[stackPointer].pos = transform(p, objOffset, rotOrigin, shapeQuat);
+
+      }
+    
+    /* else {
       vec3 objOffset = vec3(
         convertPixToNum(accessShapeParameter(currentShape.address, 2)),
         convertPixToNum(accessShapeParameter(currentShape.address, 3)),
@@ -475,6 +515,8 @@ float sdShapeNode(vec3 p, Pointer address, float boundRadius) {
 
       shapeStack[stackPointer].pos = transform(p, objOffset, rotOrigin, shapeQuat);
     }
+
+    */
   }
   clearShapeStack();
   return minDist;
@@ -626,7 +668,7 @@ vec3 calcLights(vec3 p, vec3 normal, vec3 rd, Material mat) {
     Light nextLight = lightFromPointer(next);
 
     float lightDist = length(nextLight.position - p);
-    float attenuation = 1.0 / (nextLight.attenuation.x + nextLight.attenuation.y * lightDist + nextLight.attenuation.z * lightDist * lightDist);
+    float attenuation = 1.0; // (nextLight.attenuation.x + nextLight.attenuation.y * lightDist + nextLight.attenuation.z * lightDist * lightDist);
 
     vec3 lightDir = normalize(nextLight.position - p);
 
@@ -634,17 +676,17 @@ vec3 calcLights(vec3 p, vec3 normal, vec3 rd, Material mat) {
     ambientLight += nextLight.color * nextLight.intensity;
 
     float dotLN = clamp(dot(lightDir, normal), 0., 1.);
-    vec3 diffuse = mat.albedo * nextLight.color * dotLN;
+    vec3 diffuse = mat.albedo * nextLight.color * dotLN * attenuation;
 
-    float dotRV = clamp(dot(reflect(lightDir, normal), -rd), 0., 1.);
-    vec3 specular = nextLight.color * pow(dotRV, mat.shine);
+    float dotRV = clamp(dot(reflect(-lightDir, normal), -rd), 0., 1.);
+    vec3 specular = nextLight.color * pow(dotRV, mat.shine) * smoothstep(1.0, 10.0, mat.shine);
 
     partialLight += attenuation * (diffuse + specular);
 
     next = nextLight.next;
   }
 
-  ambientLight = ambientLight * mat.albedo * 0.2;
+  ambientLight = ambientLight * mat.albedo * 0.1;
 
   return clamp(ambientLight + partialLight, vec3(0.0), vec3(1.0));
 }

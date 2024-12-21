@@ -10,17 +10,17 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   _renderView.setViewport(sf::FloatRect(0.f, yPos, 1.f, viewHeight));
 
   testLight1 = new Light();
-  testLight1->setPosition(sf::Glsl::Vec3(0, 10, 0));
-  testLight1->setColor(sf::Glsl::Vec3(1.0, 1.0, 1.0));
+  testLight1->setPosition(sf::Glsl::Vec3(10, 2.0, -40));
+  testLight1->setColor(sf::Glsl::Vec3(1.0, .5, 0.5));
   testLight1->setIntensity(1.0);
-  testLight1->setAttenuation(sf::Glsl::Vec3(1.0, 0.09, 0.032));
+  testLight1->setAttenuation(sf::Glsl::Vec3(1.0, 0.07, 0.017));
   state->rayMarcher.addLight(testLight1);
 
   testLight2 = new Light();
-  testLight2->setPosition(sf::Glsl::Vec3(0, -10, 0));
-  testLight2->setColor(sf::Glsl::Vec3(1.0, 0.0, 0.0));
+  testLight2->setPosition(sf::Glsl::Vec3(0, 4, -2));
+  testLight2->setColor(sf::Glsl::Vec3(1.0, 1.0, 1.0));
   testLight2->setIntensity(1.0);
-  testLight2->setAttenuation(sf::Glsl::Vec3(1.0, 0.09, 0.032));
+  testLight2->setAttenuation(sf::Glsl::Vec3(1.0, 0.07, 0.017));
   state->rayMarcher.addLight(testLight2);
 
   //state->rayMarcher.update();
@@ -46,13 +46,13 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 80;
-  for (int i = 0; i < 0; i++) {
+  for (int i = 0; i < 400; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = (rand() % rangeZ);
     Sphere * newSphere = new Sphere();
     newSphere->setOffset(sf::Glsl::Vec3(randX, randY, randZ));
-    newSphere->setRadius(0.5);
+    newSphere->setRadius(.8);
     state->rayMarcher.addShape(newSphere);
     spheres.push_back(newSphere);
   }
@@ -108,7 +108,7 @@ void RenderTester::update(sf::RenderWindow * window) {
 
   
 
-  testSphere2->setOffset(sf::Glsl::Vec3(std::sin(testSphereOffset)/2.0+1.5, 0, 0));
+  testSphere2->setOffset(sf::Glsl::Vec3((std::sin(testSphereOffset)+1.5), 0, 0));
   state->rayMarcher.updateShape(testSphere2);
   testSphere->setOffset(sf::Glsl::Vec3(0.0, std::cos(testSphereOffset)+1, 0));
   state->rayMarcher.updateShape(testSphere);
