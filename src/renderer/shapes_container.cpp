@@ -205,8 +205,6 @@ void ShapesContainer::addLight(Light * light, sf::Shader & shader) {
     _lights[i]->updateParams(_writeBuffer);
     _memoryBuffer.writeItem(_lights[i]->getAddress().pointerIndex(), _writeBuffer);
   }
-
-  shader.setUniform("numLights", (int)_lights.size());
   shader.setUniform("headLightPointer", _lights[0]->getAddress().asVec4());
 }
 
@@ -234,7 +232,6 @@ void ShapesContainer::destroyLight(Light * light, sf::Shader & shader) {
     _memoryBuffer.writeItem(_lights[i]->getAddress().pointerIndex(), _writeBuffer);
   }
 
-  shader.setUniform("numLights", (int)_lights.size());
   if (_lights.size() > 0) {
     shader.setUniform("headLightPointer", _lights[0]->getAddress().asVec4());
   } else {
@@ -253,7 +250,6 @@ void ShapesContainer::updateLight(Light * light) {
 
 void ShapesContainer::bind(sf::Shader & shader, std::string bufferName) {
   shader.setUniform("defaultMatPointer", _defaultMat.getAddress().asVec4());
-  shader.setUniform("numLights", 0);
   Pixel NULLPTR;
   shader.setUniform("headLightPointer", NULLPTR.asVec4());
   _memoryBuffer.bind(shader, bufferName);

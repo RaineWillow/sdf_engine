@@ -23,6 +23,7 @@ public:
       _params.push_back(defaultParam);
     }
     setK(0.0);
+    _qRot = sf::Glsl::Vec4(0.0, 0.0, 0.0, 1.0);
     _params[8].toNum(1.0);
     _writeData = new sf::Uint8[_paramsSize*4];
     _matName = "";

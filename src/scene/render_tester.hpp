@@ -14,6 +14,7 @@
 #include "../core/console.hpp"
 #include "../renderer/shapes.hpp"
 #include "../renderer/light.hpp"
+#include "../renderer/camera_3d.hpp"
 
 class RenderTester : public Scene {
 public:
@@ -39,6 +40,11 @@ private:
 
   float testSphereOffset = 0.0;
   bool onOff = false;
+
+  sf::Vector2i _center;
+  sf::Vector2i _globalCenter;
+
+  bool lockedMouse = false;
 
   std::vector<Sphere*> spheres;
 };

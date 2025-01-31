@@ -1,9 +1,10 @@
 #include "renderer.hpp"
 
-Renderer::Renderer(int width, int height) : 
+Renderer::Renderer(int width, int height, float cameraDist) : 
 _marchDrawable(sf::Quads, 4), 
 _shapesContainer(1),
-_BVHUnion(2) {
+_BVHUnion(2),
+_defaultCamera(Vector3(0.0, 0.0, cameraDist)) {
   if (!_marcher.loadFromFile("src/glsl/ray_marcher.frag", sf::Shader::Fragment)) {
 
   }
@@ -27,6 +28,8 @@ _BVHUnion(2) {
   _marchDrawable[3].color = sf::Color(0, 0, 0, 0);
   _shapesContainer.bind(_marcher, "shapes");
   _BVHUnion.bind(_marcher, "BVHUnion");
+
+  _currentCamera = &_defaultCamera;
 }
 
 Renderer::~Renderer() {
@@ -85,8 +88,27 @@ void Renderer::updateLight(Light * light) {
   _shapesContainer.updateLight(light);
 }
 
+Camera3d* Renderer::getCurrentCamera() {
+  return _currentCamera;
+}
+
+void Renderer::setCurrentCamera(Camera3d * currentCamera) {
+  _currentCamera = currentCamera;
+}
+
+void Renderer::resetToDefaultCamera() {
+  _currentCamera = &_defaultCamera;
+}
+
 void Renderer::update() {
-  
+  _marcher.setUniform("cameraPosition", _currentCamera->loadCameraPosition());
+  _marcher.setUniform("cameraForward", _currentCamera->loadCameraForward());
+  _marcher.setUniform("cameraUp", _currentCamera->loadCameraUp());
+  _marcher.setUniform("cameraRight", _currentCamera->loadCameraRight());
+
+  //sf::Glsl::Vec3 currentLookAt = _currentCamera->loadCameraLook();
+  //std::cout << "Lookat Vector:\nX:" << currentLookAt.x << " Y: " << currentLookAt.y << " Z: " << currentLookAt.z << std::endl;
+  _marcher.setUniform("cameraUp", _currentCamera->loadCameraUp());
   _shapesContainer.update();
   _BVHUnion.update();
 

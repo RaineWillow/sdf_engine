@@ -4,23 +4,25 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   console = inConsole;
   state = inState;
 
+  _center = sf::Vector2i(state->windowWidth/2.0, state->windowHeight/2.0);
+
   _renderView.reset(sf::FloatRect(0, 0, 480, 270));
   float yPos = std::max((1-(((270.f/480.f)*(float)state->windowWidth)/(float)state->windowHeight))/2.f, 0.f);
   float viewHeight = (yPos > 0) ? ((270.f/480.f)*(float)state->windowWidth)/(float)state->windowHeight : 1.f;
   _renderView.setViewport(sf::FloatRect(0.f, yPos, 1.f, viewHeight));
 
   testLight1 = new Light();
-  testLight1->setPosition(sf::Glsl::Vec3(10, 2.0, -40));
+  testLight1->setPosition(sf::Glsl::Vec3(10, 2.0, 40));
   testLight1->setColor(sf::Glsl::Vec3(1.0, .5, 0.5));
   testLight1->setIntensity(1.0);
-  testLight1->setAttenuation(sf::Glsl::Vec3(1.0, 0.07, 0.017));
+  testLight1->setAttenuation(sf::Glsl::Vec3(1.0, 0.0007, 0.00017));
   state->rayMarcher.addLight(testLight1);
 
   testLight2 = new Light();
-  testLight2->setPosition(sf::Glsl::Vec3(0, 4, -2));
+  testLight2->setPosition(sf::Glsl::Vec3(0, 4, 2));
   testLight2->setColor(sf::Glsl::Vec3(1.0, 1.0, 1.0));
   testLight2->setIntensity(1.0);
-  testLight2->setAttenuation(sf::Glsl::Vec3(1.0, 0.07, 0.017));
+  testLight2->setAttenuation(sf::Glsl::Vec3(1.0, 0.0001, 0.00017));
   state->rayMarcher.addLight(testLight2);
 
   //state->rayMarcher.update();
@@ -49,7 +51,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   for (int i = 0; i < 400; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
-    int randZ = (rand() % rangeZ);
+    int randZ = -(rand() % rangeZ);
     Sphere * newSphere = new Sphere();
     newSphere->setOffset(sf::Glsl::Vec3(randX, randY, randZ));
     newSphere->setRadius(.8);
@@ -95,6 +97,14 @@ void RenderTester::handleEvent(sf::RenderWindow * window, sf::Event & event) {
   if (event.type==sf::Event::KeyReleased) {
     if (event.key.code==sf::Keyboard::X) {
       std::cout << state->rayMarcher.outTree() << std::endl;
+    } else if (event.key.code==sf::Keyboard::Y) {
+      lockedMouse = !lockedMouse;
+
+      window->setMouseCursorGrabbed(lockedMouse);
+      window->setMouseCursorVisible(!lockedMouse);
+
+      sf::Mouse::setPosition(_center, *window);
+      _globalCenter = sf::Mouse::getPosition();
     }
   }
 }
@@ -104,9 +114,24 @@ void RenderTester::handleController() {
 }
 
 void RenderTester::update(sf::RenderWindow * window) {
+
+  float xChange = 0.0;
+  float yChange = 0.0;
+
+  if (lockedMouse) {
+    sf::Vector2i mousePosition = _globalCenter - sf::Mouse::getPosition();
+    xChange = mousePosition.x;
+    yChange = mousePosition.y;
+    sf::Mouse::setPosition(_center, *window);
+    _globalCenter = sf::Mouse::getPosition();
+  }
   testSphereOffset += state->deltaTime.asSeconds();
 
-  
+  Camera3d * camera = state->rayMarcher.getCurrentCamera();
+
+  camera->setPitchAndYaw(yChange*0.001, -xChange*0.001);
+
+  //std::cout << "xChange: " << xChange << " yChange: " << yChange << std::endl;
 
   testSphere2->setOffset(sf::Glsl::Vec3((std::sin(testSphereOffset)+1.5), 0, 0));
   state->rayMarcher.updateShape(testSphere2);

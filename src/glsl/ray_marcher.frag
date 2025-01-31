@@ -17,12 +17,16 @@ uniform vec2 shapesBufferResolution;
 uniform int shapesItemSize;
 uniform vec4 defaultMatPointer;
 uniform vec4 headLightPointer;
-uniform int numLights;
 
 #define BVH_PTR_TYPE 2
 uniform sampler2D BVHUnion;
 uniform vec2 BVHUnionBufferResolution;
 uniform int BVHUnionItemSize;
+
+uniform vec3 cameraPosition;
+uniform vec3 cameraForward;
+uniform vec3 cameraUp;
+uniform vec3 cameraRight;
 
 //memory conversion----------------------------------------------------------------
 struct dInt {
@@ -145,31 +149,26 @@ struct Light {
 
 //quaternion transform functions---------------------------------------------------
 
-vec4 quat(in vec3 v, in float a)
-{
+vec4 quat(in vec3 v, in float a) {
   return vec4(v * sin(a / 2.0), cos(a / 2.0));
 }
 
-vec4 quat_inv(in vec4 q)
-{
+vec4 quat_inv(in vec4 q) {
   return vec4(-q.xyz, q.w);
 }
 
-vec4 p2q(in vec3 p)
-{
+vec4 p2q(in vec3 p) {
   return vec4(p, 0);
 }
 
-vec4 q_mul(in vec4 q1, in vec4 q2)
-{
+vec4 q_mul(in vec4 q1, in vec4 q2) {
   return vec4(q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y, 
               q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x, 
               q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w, 
               q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z);
 }
 
-vec3 rotateq(in vec3 p, in vec4 q)
-{
+vec3 rotateq(in vec3 p, in vec4 q) {
   return q_mul(q_mul(q, p2q(p)), quat_inv(q)).xyz;
 }
 
@@ -442,7 +441,6 @@ float sdShapeNode(vec3 p, Pointer address, float boundRadius) {
     
     
     //check to see if the node is a primative node
-
     minDist = min(minDist, objectId.truth ? sdPrimitiveWithTransform(p, currentShape, boundRadius) : 0.0);
     shapesOnShapeStack = objectId.truth ? shapesOnShapeStack - 1 : shapesOnShapeStack;
 /*s 
@@ -555,6 +553,8 @@ RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
         popBVHStackFrame();
       }
     } else if (currentItem.type == BVH_PTR_TYPE) {
+      //algorithm for sorting objects by distance and inserting in order by distance and intersection
+      ///*
       OrganizerFrame data[8];
       int closestPos = 0;
       int numChildren = 0;
@@ -603,7 +603,20 @@ RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
         BVHStack[stackPointer].children[numChildren-1-i] = currentChild;
         nextClosest = data[nextClosest].next;
       }
+      //*/
+      //end of algorithm
 
+      //algorithm for dumping in objects irrespective of order or actual intersection
+      /*
+      for (int i = 0; i < 8; i++) {
+        Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
+        if (currentChild.type != NULL_PTR_TYPE) {
+          BVHStack[stackPointer].children[BVHStack[stackPointer].remainingChildren] = 7+i;
+          BVHStack[stackPointer].remainingChildren += 1;
+        }
+      }
+      */
+      //end of algorithm
       BVHStack[stackPointer].processed = true;
     } else if (currentItem.type == SHAPES_PTR_TYPE) {
       AABB objectBound = getBoundingBoxFromPointer(currentItem);
@@ -697,8 +710,8 @@ void main() {
 
   vec3 col = backgroundColor;
 
-  vec3 ro = vec3(0, 0, -20);
-  vec3 rd = normalize(vec3(uv, 1.2));
+  vec3 ro = cameraPosition;
+  vec3 rd = mat3(-cameraRight, cameraUp, -cameraForward) * normalize(vec3(uv, -1.2));
 
   RayResult foundIntersection = castRay(ro, rd, 2000.);
 

@@ -13,11 +13,12 @@
 #include "BVH_tree.hpp"
 #include "material.hpp"
 #include "light.hpp"
+#include "camera_3d.hpp"
 #include <chrono>
 
 class Renderer {
 public:
-  Renderer(int width, int height);
+  Renderer(int width, int height, float cameraDist = 20.0);
   ~Renderer();
 
   void loadMaterial(Material mat);
@@ -34,6 +35,10 @@ public:
   void addLight(Light * light);
   void destroyLight(Light * light);
   void updateLight(Light * light);
+
+  Camera3d* getCurrentCamera();
+  void setCurrentCamera(Camera3d * currentCamera);
+  void resetToDefaultCamera();
 
   void update();
 
@@ -56,6 +61,10 @@ private:
   int maxShapes = 10000;
   ShapesContainer _shapesContainer;
   BVHTree _BVHUnion;
+
+  Camera3d _defaultCamera;
+
+  Camera3d * _currentCamera;
 };
 
 #endif
