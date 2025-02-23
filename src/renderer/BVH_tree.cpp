@@ -264,6 +264,7 @@ void BVHTree::destroyNode(BVHTreeNode * node) {
   _hasAnyBoxes = _root->hasChildren();
 }
 
+//DEPRICATED, DO NOT USE
 void BVHTree::updateNode(BVHTreeNode * node) {
 
   if (!node->hasParent()) {

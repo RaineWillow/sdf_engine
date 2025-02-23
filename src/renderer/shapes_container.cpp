@@ -205,6 +205,7 @@ void ShapesContainer::addLight(Light * light, sf::Shader & shader) {
     _lights[i]->updateParams(_writeBuffer);
     _memoryBuffer.writeItem(_lights[i]->getAddress().pointerIndex(), _writeBuffer);
   }
+  
   shader.setUniform("headLightPointer", _lights[0]->getAddress().asVec4());
 }
 
@@ -260,5 +261,5 @@ void ShapesContainer::update() {
 }
 
 void ShapesContainer::render(sf::RenderTexture & renderTarget) {
-  _memoryBuffer.render(renderTarget);
+  //_memoryBuffer.render(renderTarget);
 }

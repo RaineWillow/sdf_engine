@@ -105,13 +105,9 @@ void Renderer::update() {
   _marcher.setUniform("cameraForward", _currentCamera->loadCameraForward());
   _marcher.setUniform("cameraUp", _currentCamera->loadCameraUp());
   _marcher.setUniform("cameraRight", _currentCamera->loadCameraRight());
-
-  //sf::Glsl::Vec3 currentLookAt = _currentCamera->loadCameraLook();
-  //std::cout << "Lookat Vector:\nX:" << currentLookAt.x << " Y: " << currentLookAt.y << " Z: " << currentLookAt.z << std::endl;
   _marcher.setUniform("cameraUp", _currentCamera->loadCameraUp());
   _shapesContainer.update();
   _BVHUnion.update();
-
 }
 
 const sf::Texture & Renderer::render() {

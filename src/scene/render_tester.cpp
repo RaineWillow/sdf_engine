@@ -129,7 +129,7 @@ void RenderTester::update(sf::RenderWindow * window) {
 
   Camera3d * camera = state->rayMarcher.getCurrentCamera();
 
-  camera->setPitchAndYaw(yChange*0.001, -xChange*0.001);
+  camera->setPitchAndYaw(yChange*0.001, xChange*0.001);
 
   //std::cout << "xChange: " << xChange << " yChange: " << yChange << std::endl;
 

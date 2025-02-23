@@ -1,6 +1,9 @@
 #version 420 compatibility
 #extension GL_EXT_gpu_shader4 : enable
 
+precision highp float;
+precision highp int;
+
 #define MAX_MARCHING_STEPS 40
 #define PRECISION 0.01
 
@@ -45,10 +48,10 @@ struct Pointer {
 };
 
 int convertPixToInt(vec4 pixel) {
-  int set0 = int(pixel.r*255.0);
-  int set1 = int(pixel.g*255.0);
-  int set2 = int(pixel.b*255.0);
-  int set3 = int(pixel.a*255.0);
+  int set0 = int(round(pixel.r*255.0));
+  int set1 = int(round(pixel.g*255.0));
+  int set2 = int(round(pixel.b*255.0));
+  int set3 = int(round(pixel.a*255.0));
 
   int num = ((set0 << 24) + (set1 << 16) + (set2 << 8) + set3);
 
@@ -56,10 +59,10 @@ int convertPixToInt(vec4 pixel) {
 }
 
 float convertPixToNum(vec4 pixel) {
-  int set0 = int(pixel.r*255.0);
-  int set1 = int(pixel.g*255.0);
-  int set2 = int(pixel.b*255.0);
-  int set3 = int(pixel.a*255.0);
+  int set0 = int(round(pixel.r*255.0));
+  int set1 = int(round(pixel.g*255.0));
+  int set2 = int(round(pixel.b*255.0));
+  int set3 = int(round(pixel.a*255.0));
 
   int num = ((set0 << 24) + (set1 << 16) + (set2 << 8) + set3);
 
@@ -67,10 +70,10 @@ float convertPixToNum(vec4 pixel) {
 }
 
 dInt convertPixToDInt(vec4 pixel) {
-  int set0 = int(pixel.r*255.0);
-  int set1 = int(pixel.g*255.0);
-  int set2 = int(pixel.b*255.0);
-  int set3 = int(pixel.a*255.0);
+  int set0 = int(round(pixel.r*255.0));
+  int set1 = int(round(pixel.g*255.0));
+  int set2 = int(round(pixel.b*255.0));
+  int set3 = int(round(pixel.a*255.0));
 
   int num1 = ((set0 << 8) + set1);
   int num2 = ((set2 << 8) + set3);
@@ -79,10 +82,10 @@ dInt convertPixToDInt(vec4 pixel) {
 }
 
 iBool convertPixToIBool(vec4 pixel) {
-  int set0 = int(pixel.r*255.0);
-  int set1 = int(pixel.g*255.0);
-  int set2 = int(pixel.b*255.0);
-  int set3 = int(pixel.a*255.0);
+  int set0 = int(round(pixel.r*255.0));
+  int set1 = int(round(pixel.g*255.0));
+  int set2 = int(round(pixel.b*255.0));
+  int set3 = int(round(pixel.a*255.0));
 
   int num = ((set0 << 16) + (set1 << 8) + set2);
 
@@ -98,19 +101,19 @@ vec3 convertPixToCol(vec4 pixel) {
 }
 
 vec4 convertPixToFDat(vec4 pixel) {
-  int set0 = int(pixel.r*255.0);
-  int set1 = int(pixel.g*255.0);
-  int set2 = int(pixel.b*255.0);
-  int set3 = int(pixel.a*255.0);
+  int set0 = int(round(pixel.r*255.0));
+  int set1 = int(round(pixel.g*255.0));
+  int set2 = int(round(pixel.b*255.0));
+  int set3 = int(round(pixel.a*255.0));
 
   return vec4(set0, set1, set2, set3);
 }
 
 Pointer convertPixToPointer(vec4 pixel) {
-  int set0 = int(pixel.r*255.0);
-  int set1 = int(pixel.g*255.0);
-  int set2 = int(pixel.b*255.0);
-  int set3 = int(pixel.a*255.0);
+  int set0 = int(round(pixel.r*255.0));
+  int set1 = int(round(pixel.g*255.0));
+  int set2 = int(round(pixel.b*255.0));
+  int set3 = int(round(pixel.a*255.0));
 
   int num = (set0 << 16) + (set1 << 8) + set2;
 
@@ -443,78 +446,6 @@ float sdShapeNode(vec3 p, Pointer address, float boundRadius) {
     //check to see if the node is a primative node
     minDist = min(minDist, objectId.truth ? sdPrimitiveWithTransform(p, currentShape, boundRadius) : 0.0);
     shapesOnShapeStack = objectId.truth ? shapesOnShapeStack - 1 : shapesOnShapeStack;
-/*s 
-    if (shapeStack[stackPointer].processed) {
-      
-      //we only want to continue processing the stack frame if it has remaining children:
-      if (shapeStack[stackPointer].remainingChildren > 0) {
-        p = shapeStack[stackPointer].pos;
-      } else {
-        popShapeStackFrame();
-      }
-    }
-
-/*
-    else {
-      
-      
-      if (shapeStack[stackPointer].processed) {
-      
-      //we only want to continue processing the stack frame if it has remaining children:
-        if (shapeStack[stackPointer].remainingChildren > 0) {
-          p = shapeStack[stackPointer].pos;
-        } else {
-          popShapeStackFrame();
-        }
-      } else {
-
-        vec3 objOffset = vec3(
-          convertPixToNum(accessShapeParameter(currentShape.address, 2)),
-          convertPixToNum(accessShapeParameter(currentShape.address, 3)),
-          convertPixToNum(accessShapeParameter(currentShape.address, 4))
-        );
-
-        vec4 shapeQuat = vec4(
-          convertPixToNum(accessShapeParameter(currentShape.address, 5)),
-          convertPixToNum(accessShapeParameter(currentShape.address, 6)),
-          convertPixToNum(accessShapeParameter(currentShape.address, 7)),
-          convertPixToNum(accessShapeParameter(currentShape.address, 8))
-        );
-
-        vec3 rotOrigin = vec3(
-          convertPixToNum(accessShapeParameter(currentShape.address, 9)),
-          convertPixToNum(accessShapeParameter(currentShape.address, 10)),
-          convertPixToNum(accessShapeParameter(currentShape.address, 11))
-        );
-
-        shapeStack[stackPointer].pos = transform(p, objOffset, rotOrigin, shapeQuat);
-
-      }
-    
-    /* else {
-      vec3 objOffset = vec3(
-        convertPixToNum(accessShapeParameter(currentShape.address, 2)),
-        convertPixToNum(accessShapeParameter(currentShape.address, 3)),
-        convertPixToNum(accessShapeParameter(currentShape.address, 4))
-      );
-
-      vec4 shapeQuat = vec4(
-        convertPixToNum(accessShapeParameter(currentShape.address, 5)),
-        convertPixToNum(accessShapeParameter(currentShape.address, 6)),
-        convertPixToNum(accessShapeParameter(currentShape.address, 7)),
-        convertPixToNum(accessShapeParameter(currentShape.address, 8))
-      );
-
-      vec3 rotOrigin = vec3(
-        convertPixToNum(accessShapeParameter(currentShape.address, 9)),
-        convertPixToNum(accessShapeParameter(currentShape.address, 10)),
-        convertPixToNum(accessShapeParameter(currentShape.address, 11))
-      );
-
-      shapeStack[stackPointer].pos = transform(p, objOffset, rotOrigin, shapeQuat);
-    }
-
-    */
   }
   clearShapeStack();
   return minDist;
@@ -711,7 +642,7 @@ void main() {
   vec3 col = backgroundColor;
 
   vec3 ro = cameraPosition;
-  vec3 rd = mat3(-cameraRight, cameraUp, -cameraForward) * normalize(vec3(uv, -1.2));
+  vec3 rd = mat3(cameraRight, cameraUp, -cameraForward) * normalize(vec3(uv, -1.2));
 
   RayResult foundIntersection = castRay(ro, rd, 2000.);
 
