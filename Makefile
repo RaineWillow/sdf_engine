@@ -11,12 +11,12 @@ endif
 
 # Test if you are on windows or linux, which will change some values for compilation and running the program
 ifeq ($(OSNAME), windows)
-	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lopengl32 -lGLEW
+	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lopengl32
 	TARGET_EXEC := final_program.exe
 	RUNPRECONDITION :=
 	RELEASEFLAGS := -Wl,-subsystem,windows
 else
-	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lGL -lGLEW
+	LIBS := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lsfml-network -lGL
 	TARGET_EXEC := final_program
 	RUNPRECONDITION := nvidia-offload
 	RELEASEFLAGS :=
