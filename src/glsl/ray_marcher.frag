@@ -49,9 +49,9 @@ struct Pointer {
 
 int convertPixToInt(vec4 pixel) {
   int set0 = int(round(pixel.r*255.0));
-  int set1 = int(round(pixel.g*255.0));
-  int set2 = int(round(pixel.b*255.0));
-  int set3 = int(round(pixel.a*255.0));
+  int set1 = int((pixel.g*255.0));
+  int set2 = int((pixel.b*255.0));
+  int set3 = int((pixel.a*255.0));
 
   int num = ((set0 << 24) | (set1 << 16) | (set2 << 8) | set3);
 
@@ -59,10 +59,10 @@ int convertPixToInt(vec4 pixel) {
 }
 
 float convertPixToNum(vec4 pixel) {
-  int set0 = int(round(pixel.r*255.0));
-  int set1 = int(round(pixel.g*255.0));
-  int set2 = int(round(pixel.b*255.0));
-  int set3 = int(round(pixel.a*255.0));
+  int set0 = int((pixel.r*255.0));
+  int set1 = int((pixel.g*255.0));
+  int set2 = int((pixel.b*255.0));
+  int set3 = int((pixel.a*255.0));
 
   int num = ((set0 << 24) | (set1 << 16) | (set2 << 8) | set3);
 
@@ -70,10 +70,10 @@ float convertPixToNum(vec4 pixel) {
 }
 
 dInt convertPixToDInt(vec4 pixel) {
-  int set0 = int(round(pixel.r*255.0));
-  int set1 = int(round(pixel.g*255.0));
-  int set2 = int(round(pixel.b*255.0));
-  int set3 = int(round(pixel.a*255.0));
+  int set0 = int((pixel.r*255.0));
+  int set1 = int((pixel.g*255.0));
+  int set2 = int((pixel.b*255.0));
+  int set3 = int((pixel.a*255.0));
 
   int num1 = ((set0 << 8) | set1);
   int num2 = ((set2 << 8) | set3);
@@ -82,10 +82,10 @@ dInt convertPixToDInt(vec4 pixel) {
 }
 
 iBool convertPixToIBool(vec4 pixel) {
-  int set0 = int(round(pixel.r*255.0));
-  int set1 = int(round(pixel.g*255.0));
-  int set2 = int(round(pixel.b*255.0));
-  int set3 = int(round(pixel.a*255.0));
+  int set0 = int((pixel.r*255.0));
+  int set1 = int((pixel.g*255.0));
+  int set2 = int((pixel.b*255.0));
+  int set3 = int((pixel.a*255.0));
 
   int num = ((set0 << 16) | (set1 << 8) | set2);
 
@@ -101,19 +101,19 @@ vec3 convertPixToCol(vec4 pixel) {
 }
 
 vec4 convertPixToFDat(vec4 pixel) {
-  int set0 = int(round(pixel.r*255.0));
-  int set1 = int(round(pixel.g*255.0));
-  int set2 = int(round(pixel.b*255.0));
-  int set3 = int(round(pixel.a*255.0));
+  int set0 = int((pixel.r*255.0));
+  int set1 = int((pixel.g*255.0));
+  int set2 = int((pixel.b*255.0));
+  int set3 = int((pixel.a*255.0));
 
   return vec4(set0, set1, set2, set3);
 }
 
 Pointer convertPixToPointer(vec4 pixel) {
-  int set0 = int(round(pixel.r*255.0));
-  int set1 = int(round(pixel.g*255.0));
-  int set2 = int(round(pixel.b*255.0));
-  int set3 = int(round(pixel.a*255.0));
+  int set0 = int((pixel.r*255.0));
+  int set1 = int((pixel.g*255.0));
+  int set2 = int((pixel.b*255.0));
+  int set3 = int((pixel.a*255.0));
 
   int num = (set0 << 16) | (set1 << 8) | set2;
 
