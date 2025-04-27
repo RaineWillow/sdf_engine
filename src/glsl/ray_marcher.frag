@@ -185,13 +185,25 @@ vec3 transform(vec3 p, vec3 offset, vec3 rotOrigin, vec4 quat) {
 //---------------------------------------------------------------------------------
 
 //memory access functions----------------------------------------------------------
+
+vec3 sRGBToLinear(vec3 c) {
+    // for each channel:
+    // if c ≤ 0.04045:     linear = c / 12.92
+    // else:               linear = ((c + 0.055) / 1.055) ^ 2.4
+  bvec3 cutoff = lessThanEqual(c, vec3(0.04045));
+  vec3 lower  = c / 12.92;
+  vec3 higher = pow((c + 0.055) / 1.055, vec3(2.4));
+  // mix picks lower where cutoff==true, higher elsewhere
+  return mix(higher, lower, cutoff);
+}
+
 vec4 accessMemoryParameter(sampler2D inBuffer, int index, int parameter, vec2 bufferResolution, int itemSize) {
   int maxIndexPerRow = int(bufferResolution.x/float(itemSize));
 
   int rowPosition = index/maxIndexPerRow;
   int colPosition = (index-rowPosition*maxIndexPerRow)*itemSize + parameter;
-
-  return texelFetch(inBuffer, ivec2(colPosition, rowPosition), 0);
+  vec4 textureData = texelFetch(inBuffer, ivec2(colPosition, rowPosition), 0);
+  return textureData;
 }
 
 vec4 accessShapeParameter(int index, int parameter) {

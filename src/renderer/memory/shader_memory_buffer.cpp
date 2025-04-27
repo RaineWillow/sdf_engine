@@ -10,6 +10,8 @@ waitTime(8) {
 
     last = std::chrono::steady_clock::now();
 
+    const_cast<sf::Texture&>(_memoryBuffer.getTexture()).setSrgb(false);
+
     _memoryBuffer.create(_memoryBufferResolutionX, _memoryBufferResolutionY);
     _memoryBuffer.setSmooth(false);
 
