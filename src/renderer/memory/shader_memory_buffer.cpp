@@ -13,6 +13,8 @@ waitTime(8) {
     _memoryBuffer.create(_memoryBufferResolutionX, _memoryBufferResolutionY);
     _memoryBuffer.setSmooth(false);
 
+    std::cout << _memoryBuffer.isSrgb() << std::endl;
+
     for (int i = _itemsPerRow*_memoryBufferResolutionY-1; i>=0; i--) {
       _freeIndices.push_back(i);
       _allIndices.push_back(false);
