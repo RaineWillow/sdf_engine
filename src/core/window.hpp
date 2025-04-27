@@ -16,6 +16,7 @@
 #include "../utils/file.hpp"
 #include <math.h>
 #include "SFML/System.hpp"
+#include "SFML/OpenGL.hpp"
 
 #include "../../imgui/imgui.h"
 #include "../../imgui/imgui-SFML.h"
