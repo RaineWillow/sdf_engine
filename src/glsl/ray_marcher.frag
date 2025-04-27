@@ -48,7 +48,7 @@ struct Pointer {
 };
 
 int convertPixToInt(vec4 pixel) {
-  int set0 = int(round(pixel.r*255.0));
+  int set0 = int((pixel.r*255.0));
   int set1 = int((pixel.g*255.0));
   int set2 = int((pixel.b*255.0));
   int set3 = int((pixel.a*255.0));
