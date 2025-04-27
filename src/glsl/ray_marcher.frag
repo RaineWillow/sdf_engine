@@ -53,7 +53,7 @@ int convertPixToInt(vec4 pixel) {
   int set2 = int(round(pixel.b*255.0));
   int set3 = int(round(pixel.a*255.0));
 
-  int num = ((set0 << 24) + (set1 << 16) + (set2 << 8) + set3);
+  int num = ((set0 << 24) | (set1 << 16) | (set2 << 8) | set3);
 
   return num;
 }
@@ -64,7 +64,7 @@ float convertPixToNum(vec4 pixel) {
   int set2 = int(round(pixel.b*255.0));
   int set3 = int(round(pixel.a*255.0));
 
-  int num = ((set0 << 24) + (set1 << 16) + (set2 << 8) + set3);
+  int num = ((set0 << 24) | (set1 << 16) | (set2 << 8) | set3);
 
   return intBitsToFloat(num);
 }
@@ -75,8 +75,8 @@ dInt convertPixToDInt(vec4 pixel) {
   int set2 = int(round(pixel.b*255.0));
   int set3 = int(round(pixel.a*255.0));
 
-  int num1 = ((set0 << 8) + set1);
-  int num2 = ((set2 << 8) + set3);
+  int num1 = ((set0 << 8) | set1);
+  int num2 = ((set2 << 8) | set3);
 
   return dInt(num1, num2);
 }
@@ -87,7 +87,7 @@ iBool convertPixToIBool(vec4 pixel) {
   int set2 = int(round(pixel.b*255.0));
   int set3 = int(round(pixel.a*255.0));
 
-  int num = ((set0 << 16) + (set1 << 8) + set2);
+  int num = ((set0 << 16) | (set1 << 8) | set2);
 
   return iBool(set3 > 0, num);
 }
@@ -115,7 +115,7 @@ Pointer convertPixToPointer(vec4 pixel) {
   int set2 = int(round(pixel.b*255.0));
   int set3 = int(round(pixel.a*255.0));
 
-  int num = (set0 << 16) + (set1 << 8) + set2;
+  int num = (set0 << 16) | (set1 << 8) | set2;
 
   return Pointer(num, set3);
 }

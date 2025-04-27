@@ -107,7 +107,7 @@ struct Pixel {
   }
 
   float fromNum() {
-    uint32_t intNum = (r << 24) + (g << 16) + (b << 8) + a;
+    uint32_t intNum = (r << 24) | (g << 16) | (b << 8) | a;
     float data;
 
     memcpy(&data, &intNum, sizeof(data));
