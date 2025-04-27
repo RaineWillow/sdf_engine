@@ -1,6 +1,6 @@
 #include "shapes_container.hpp"
 
-ShapesContainer::ShapesContainer(int memoryBufferId) : _memoryBuffer(150, 7200, 52, memoryBufferId),
+ShapesContainer::ShapesContainer(int memoryBufferId) : _memoryBuffer(64, 2000, 52, memoryBufferId),
 _defaultMat("default") {
 
   _defaultMat.setAlbedo(sf::Glsl::Vec3(0.5, 0.5, 0.5));

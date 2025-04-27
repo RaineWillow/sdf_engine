@@ -1,6 +1,6 @@
 #include "BVH_tree.hpp"
 
-BVHTree::BVHTree(int memoryBufferId) : _memoryBuffer(250, 3500, 15, memoryBufferId), 
+BVHTree::BVHTree(int memoryBufferId) : _memoryBuffer(64, 2000, 15, memoryBufferId), 
 _keepTracker(sf::Glsl::Vec3(-1, -1, -1), sf::Glsl::Vec3(-1, -1, -1)){
   
   //_writeBuffer = new sf::Uint8[15*4];
