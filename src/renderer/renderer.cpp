@@ -109,9 +109,7 @@ void Renderer::update() {
   _shapesContainer.update();
   _BVHUnion.update();
 
-  _context.setActive(true);
-  glFinish();
-  _context.setActive(false); 
+  FinishHelperContext barrier;
 }
 
 const sf::Texture & Renderer::render() {

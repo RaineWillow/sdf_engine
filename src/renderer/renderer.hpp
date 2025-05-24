@@ -16,6 +16,13 @@
 #include "camera_3d.hpp"
 #include <chrono>
 
+struct FinishHelperContext : sf::GlResource {
+  FinishHelperContext() {
+    sf::GlResource::TransientContextLock lock; // make helper current
+    glFinish();                                // stall that context
+  }
+};
+
 class Renderer {
 public:
   Renderer(int width, int height, float cameraDist = 20.0);
