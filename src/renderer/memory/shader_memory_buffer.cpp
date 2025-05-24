@@ -1,6 +1,5 @@
 #include "shader_memory_buffer.hpp"
 
-
 ShaderMemoryBuffer::ShaderMemoryBuffer(int itemsPerRow, int numRows, int itemSize, int id) : 
 waitTime(8) {
     _itemSize = itemSize;
@@ -10,12 +9,12 @@ waitTime(8) {
 
     last = std::chrono::steady_clock::now();
 
-    const_cast<sf::Texture&>(_memoryBuffer.getTexture()).setSrgb(false);
+    _memoryBuffer.setSrgb(false);
 
     _memoryBuffer.create(_memoryBufferResolutionX, _memoryBufferResolutionY);
     _memoryBuffer.setSmooth(false);
 
-    std::cout << const_cast<sf::Texture&>(_memoryBuffer.getTexture()).isSrgb() << std::endl;
+    std::cout << _memoryBuffer.isSrgb() << std::endl;
 
     for (int i = _itemsPerRow*_memoryBufferResolutionY-1; i>=0; i--) {
       _freeIndices.push_back(i);
@@ -85,7 +84,7 @@ void ShaderMemoryBuffer::writeItem(int index, sf::Uint8 * itemArray) {
 }
 
 void ShaderMemoryBuffer::bind(sf::Shader & shader, std::string bufferName) {
-  shader.setUniform(bufferName, _memoryBuffer.getTexture());
+  shader.setUniform(bufferName, _memoryBuffer);
   shader.setUniform(bufferName+"BufferResolution", sf::Glsl::Vec2(_memoryBufferResolutionX, _memoryBufferResolutionY));
   shader.setUniform(bufferName+"ItemSize", _itemSize);
   _bufferName = bufferName;
@@ -128,7 +127,7 @@ void ShaderMemoryBuffer::update() {
   _uniqueWrites.clear();
 
   for (const auto & elem: _updates) {
-    const_cast<sf::Texture&>(_memoryBuffer.getTexture()).update(_bufferedWrite[elem], _itemsPerRow*_itemSize, 1, 0, elem);
+    _memoryBuffer.update(_bufferedWrite[elem], _itemsPerRow*_itemSize, 1, 0, elem);
     //_updates.erase(elem);
   }
 
@@ -158,7 +157,7 @@ void ShaderMemoryBuffer::update() {
 
 void ShaderMemoryBuffer::render(sf::RenderTexture & renderTarget) {
   sf::Sprite drawEnable;
-  drawEnable.setTexture(_memoryBuffer.getTexture());
+  drawEnable.setTexture(_memoryBuffer);
   drawEnable.setTextureRect(sf::IntRect(0, 0, 300, 100));
   drawEnable.setPosition(sf::Vector2f(20, 20));
   sf::RectangleShape newRect(sf::Vector2f(300, 100));

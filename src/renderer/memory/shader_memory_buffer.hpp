@@ -42,14 +42,13 @@ private:
 
     int numWrites = 0;
 
-    sf::RenderTexture _memoryBuffer;
+    sf::Texture _memoryBuffer;
 
     std::string _bufferName;
 
     std::vector<int> _freeIndices;
 
     std::vector<bool> _allIndices;
-
 
     std::unordered_map<int, sf::Uint8*> _uniqueWrites;
     std::unordered_map<int, sf::Uint8*> _bufferedWrite;
@@ -60,6 +59,5 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> currentTime;
     bool initialUpdate = false;
 };
-
 
 #endif
