@@ -18,6 +18,7 @@ uniform vec2 u_resolution;
 uniform sampler2D shapes;
 uniform vec2 shapesBufferResolution;
 uniform int shapesItemSize;
+uniform vec4 shapesDebugPointer;
 uniform vec4 defaultMatPointer;
 uniform vec4 headLightPointer;
 
@@ -25,6 +26,8 @@ uniform vec4 headLightPointer;
 uniform sampler2D BVHUnion;
 uniform vec2 BVHUnionBufferResolution;
 uniform int BVHUnionItemSize;
+uniform vec4 BVHUnionDebugPointer;
+uniform vec4 rootPointer;
 
 uniform vec3 cameraPosition;
 uniform vec3 cameraForward;
@@ -198,12 +201,10 @@ vec3 sRGBToLinear(vec3 c) {
 }
 
 vec4 accessMemoryParameter(sampler2D inBuffer, int index, int parameter, vec2 bufferResolution, int itemSize) {
-  int maxIndexPerRow = int(bufferResolution.x/float(itemSize));
-
-  int rowPosition = index/maxIndexPerRow;
-  int colPosition = (index-rowPosition*maxIndexPerRow)*itemSize + parameter;
-  vec4 textureData = texelFetch(inBuffer, ivec2(colPosition, rowPosition), 0);
-  return textureData;
+  int cols   = int(bufferResolution.x) / itemSize;
+  int row    =  index / cols;
+  int col    = (index % cols) * itemSize + parameter;
+  return texelFetch(inBuffer, ivec2(col, row), 0);
 }
 
 vec4 accessShapeParameter(int index, int parameter) {
@@ -468,7 +469,7 @@ RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
 
   vec3 m = 1.0/rd;
 
-  Pointer root = Pointer(0, 2);
+  Pointer root = convertPixToPointer(rootPointer);
 
   bool hit = false;
 
@@ -667,4 +668,13 @@ void main() {
   }
 
   gl_FragColor = vec4(col, 1.0);
+
+  int shapesDebugData = convertPixToInt(accessShapeParameter(convertPixToPointer(shapesDebugPointer).address, 0));
+  int BVHUnionDebugData = convertPixToInt(accessBVHUnionParameter(convertPixToPointer(BVHUnionDebugPointer).address, 0));
+
+  if (shapesDebugData==BVHUnionDebugData) {
+    gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+  } else {
+    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+  }
 }

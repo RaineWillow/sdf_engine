@@ -19,6 +19,7 @@ BVHTree::~BVHTree() {
 }
 
 void BVHTree::bind(sf::Shader & shader, std::string bufferName) {
+  shader.setUniform("rootPointer", _root->getAddress().asVec4());
   _memoryBuffer.bind(shader, bufferName);
 }
 

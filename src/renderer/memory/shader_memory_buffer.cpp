@@ -26,6 +26,13 @@ waitTime(8) {
     }
 
     _id = id;
+
+    _debugData = newItem();
+    _debugDataArray = new sf::Uint8[_itemSize*4];
+    for (int i = 0; i < _itemSize; i++) {
+      Pixel defaultParam;
+      _debugParams.push_back(defaultParam);
+    }
 }
 
 ShaderMemoryBuffer::~ShaderMemoryBuffer() {
@@ -34,6 +41,8 @@ ShaderMemoryBuffer::~ShaderMemoryBuffer() {
     sf::Uint8 * updateBuffer = x.second;
     delete[] updateBuffer;
   }
+
+  delete[] _debugDataArray;
   _bufferedWrite.clear();
   _bufferedWrite.clear();
 }
@@ -87,6 +96,7 @@ void ShaderMemoryBuffer::bind(sf::Shader & shader, std::string bufferName) {
   shader.setUniform(bufferName, _memoryBuffer);
   shader.setUniform(bufferName+"BufferResolution", sf::Glsl::Vec2(_memoryBufferResolutionX, _memoryBufferResolutionY));
   shader.setUniform(bufferName+"ItemSize", _itemSize);
+  shader.setUniform(bufferName+"DebugPointer", _debugData.asVec4());
   _bufferName = bufferName;
 }
 
@@ -104,10 +114,21 @@ void ShaderMemoryBuffer::update() {
   in wait times or even removal of this limit.
   */
   currentTime = std::chrono::steady_clock::now();
-  if (!((currentTime-last) > waitTime) && initialUpdate) {
-    initialUpdate = true;
+  if (!((currentTime-last) > waitTime)) {
     return;
   }
+
+  //write debug params to debug object
+  uint32_t currentWrite = _debugParams[0].fromInt();
+  currentWrite += 1;
+  _debugParams[0].toInt(currentWrite);
+
+  for (int i = 0; i < _itemSize; i++) {
+    _debugParams[i].writeToArray(i, _debugDataArray, _itemSize);
+  }
+
+  writeItem(_debugData.pointerIndex(), _debugDataArray);
+
   //std::cout << _bufferName << ": " << _uniqueWrites.size() << std::endl;
   for (const auto& elem: _uniqueWrites) {
     
@@ -135,7 +156,7 @@ void ShaderMemoryBuffer::update() {
 
 
   numWrites = 0;
-
+  last = currentTime; 
   
   
 /*

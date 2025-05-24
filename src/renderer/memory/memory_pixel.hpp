@@ -106,6 +106,10 @@ struct Pixel {
     return a==0;
   }
 
+  uint32_t fromInt() {
+    return (r << 24) | (g << 16) | (b << 8) | a;
+  }
+
   float fromNum() {
     uint32_t intNum = (r << 24) | (g << 16) | (b << 8) | a;
     float data;

@@ -187,7 +187,7 @@ std::vector<std::string> ShapesContainer::getMaterials() {
 void ShapesContainer::addLight(Light * light, sf::Shader & shader) {
 
   if (std::find(_lights.begin(), _lights.end(), light) != _lights.end()) {
-    throw std::invalid_argument("Attempted to readd a light which has already been added (try making a copy of it if you need to)");
+    throw std::invalid_argument("Attempted to read a light which has already been added (try making a copy of it if you need to)");
   }
   Pixel newAddress = _memoryBuffer.newItem();
   light->setAddress(newAddress);

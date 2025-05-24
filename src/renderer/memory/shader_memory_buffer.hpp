@@ -50,6 +50,10 @@ private:
 
     std::vector<bool> _allIndices;
 
+    Pixel _debugData;
+    sf::Uint8 * _debugDataArray;
+    std::vector<Pixel> _debugParams;
+
     std::unordered_map<int, sf::Uint8*> _uniqueWrites;
     std::unordered_map<int, sf::Uint8*> _bufferedWrite;
     std::unordered_set<int> _updates;
