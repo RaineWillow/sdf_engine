@@ -108,6 +108,10 @@ void Renderer::update() {
   _marcher.setUniform("cameraUp", _currentCamera->loadCameraUp());
   _shapesContainer.update();
   _BVHUnion.update();
+
+  _context.setActive(true);
+  glFinish();
+  _context.setActive(false); 
 }
 
 const sf::Texture & Renderer::render() {
