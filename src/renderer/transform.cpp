@@ -8,8 +8,6 @@ void Transform::setOffset(Vector3 offset) {
 
 void Transform::setRotationOrigin(Vector3 rotationOrigin) {
   _rotationOrigin = rotationOrigin;
-
-  updateChildrenRotationOriginSignal();
 }
 
 void Transform::setOrientation(Quaternion orientation) {
@@ -32,16 +30,9 @@ Quaternion Transform::getOrientation() {
 
 Vector3 Transform::getWorldOffset() {
   if (hasParent()) {
-    return _offset+_parentOffset;
+    return (_parentOrientation * Quaternion::fromVector3(_offset) * _parentOrientation.conjugate()).toVector3()+_parentOffset;
   }
   return _offset;
-}
-
-Vector3 Transform::getWorldRotationOrigin() {
-  if (hasParent()) {
-    return _parentRotationOrigin + (_parentOrientation * Quaternion::fromVector3(_rotationOrigin - _parentRotationOrigin) * _parentOrientation.conjugate()).toVector3();
-  }
-  return _rotationOrigin;
 }
 
 Quaternion Transform::getWorldOrientation() {
@@ -59,18 +50,13 @@ void Transform::addChild(Transform * child) {
   //the child's new local offset is just it's world offset minus the parent's world offset
   child->_offset = child->getWorldOffset() - getWorldOffset();
 
-  //the child's new local rotation origin
-  child->_rotationOrigin = getWorldRotationOrigin() + (getWorldOrientation().conjugate() * Quaternion::fromVector3(child->getWorldRotationOrigin() - getWorldRotationOrigin()) * getWorldOrientation()).toVector3();
-  
   //the child's new local orientation
   child->_orientation = getWorldOrientation().conjugate() * child->getWorldOrientation();
 
   child->_parentOffset = getWorldOffset();
-  child->_parentRotationOrigin = getWorldRotationOrigin();
   child->_parentOrientation = getWorldOrientation();
 
   child->updateChildrenOffsetSignal();
-  child->updateChildrenRotationOriginSignal();
   child->updateChildrenOrientationSignal();
 
   child->_parent = this;
@@ -83,14 +69,12 @@ void Transform::detach() {
     throw std::logic_error("Error! Attempted to detach a transform when the transform had no parent!");
   }
   _offset = getWorldOffset();
-  _rotationOrigin = getWorldRotationOrigin();
   _orientation = getWorldOrientation();
 
   _parent->_children.erase(this);
   _parent = NULL;
 
   updateChildrenOffsetSignal();
-  updateChildrenRotationOriginSignal();
   updateChildrenOrientationSignal();
 }
 
@@ -106,20 +90,31 @@ Transform * Transform::getParent() {
   return _parent;
 }
 
+AABBTransform Transform::getTransformedAABB(Vector3 max) {
+  //begin by getting the extants
+  Vector3 right(max.getX(), 0.0, 0.0);
+  Vector3 up(0.0, max.getY(), 0.0);
+  Vector3 depth(0.0, 0.0, max.getZ());
+
+  Quaternion orientation = getWorldOrientation();
+  Vector3 rotCenter = getRotationOrigin();
+
+  right = (orientation *  Quaternion::fromVector3(right) * orientation.conjugate()).toVector3();
+  up = (orientation *  Quaternion::fromVector3(up) * orientation.conjugate()).toVector3();
+  depth = (orientation *  Quaternion::fromVector3(depth) * orientation.conjugate()).toVector3();
+
+  Vector3 centerPoint = rotCenter + (orientation * Quaternion::fromVector3(-rotCenter) * orientation.conjugate()).toVector3();
+
+  Vector3 extantToMax = (right.abs()+up.abs()+depth.abs());
+
+  return {Vector3(centerPoint+extantToMax), Vector3(centerPoint-extantToMax)};
+}
+
 void Transform::updateChildrenOffsetSignal() {
   if (hasChildren()) {
     for (const auto& elem : _children) {
       elem->_parentOffset = getWorldOffset();
       elem->updateChildrenOffsetSignal();
-    }
-  }
-}
-
-void Transform::updateChildrenRotationOriginSignal() {
-  if (hasChildren()) {
-    for (const auto& elem : _children) {
-      elem->_parentRotationOrigin = getWorldRotationOrigin();
-      elem->updateChildrenRotationOriginSignal();
     }
   }
 }

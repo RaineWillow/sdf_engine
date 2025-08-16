@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <string>
 #include <stdexcept>
-#include <string>
 #include <utility>
 #include <unordered_map>
 #include "memory/memory_pixel.hpp"

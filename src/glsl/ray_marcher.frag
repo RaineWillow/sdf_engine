@@ -1,10 +1,10 @@
 #version 420 compatibility
 #extension GL_EXT_gpu_shader4 : enable
 
-precision highp float;
-precision highp int;
+precision mediump float;
+precision mediump int;
 
-#define MAX_MARCHING_STEPS 40
+#define MAX_MARCHING_STEPS 20
 #define PRECISION 0.01
 
 uniform vec2 u_resolution;
@@ -143,6 +143,7 @@ struct RayResult {
   vec3 p;
   bool hit;
   Pointer hitAddr;
+  int numHits;
 };
 
 struct Light {
@@ -182,24 +183,12 @@ vec3 transform(vec3 p, vec3 offset, vec3 rotOrigin, vec4 quat) {
   //first, transform p by the offset
   p -= offset;
   //then, rotate p, keeping in mind the rotation origin
-  p = rotateq(p-rotOrigin, quat) + rotOrigin;
+  p = rotateq(p-rotOrigin, quat_inv(quat)) + rotOrigin;
   return p;
 }
 //---------------------------------------------------------------------------------
 
 //memory access functions----------------------------------------------------------
-
-vec3 sRGBToLinear(vec3 c) {
-    // for each channel:
-    // if c ≤ 0.04045:     linear = c / 12.92
-    // else:               linear = ((c + 0.055) / 1.055) ^ 2.4
-  bvec3 cutoff = lessThanEqual(c, vec3(0.04045));
-  vec3 lower  = c / 12.92;
-  vec3 higher = pow((c + 0.055) / 1.055, vec3(2.4));
-  // mix picks lower where cutoff==true, higher elsewhere
-  return mix(higher, lower, cutoff);
-}
-
 vec4 accessMemoryParameter(sampler2D inBuffer, int index, int parameter, vec2 bufferResolution, int itemSize) {
   int cols   = int(bufferResolution.x) / itemSize;
   int row    =  index / cols;
@@ -456,7 +445,7 @@ float sdShapeNode(vec3 p, Pointer address, float boundRadius) {
     iBool objectId = convertPixToIBool(accessShapeParameter(currentShape.address, 0));
     
     
-    //check to see if the node is a primative node
+    //check to see if the node is a primitive node
     minDist = min(minDist, objectId.truth ? sdPrimitiveWithTransform(p, currentShape, boundRadius) : 0.0);
     shapesOnShapeStack = objectId.truth ? shapesOnShapeStack - 1 : shapesOnShapeStack;
   }
@@ -472,6 +461,8 @@ RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
   Pointer root = convertPixToPointer(rootPointer);
 
   bool hit = false;
+
+  int numHits = 0;
 
   Pointer hitAddr;
 
@@ -506,9 +497,11 @@ RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
       for (int i = 0; i < 8; i++) {
         Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
         if (currentChild.type != NULL_PTR_TYPE) {
+          
           AABB currentBound = getBoundingBoxFromPointer(currentChild);
           float dist = sdAxisBox(p-currentBound.pos, currentBound.bound);
           if (boxIntersectionPrecomupute(p-currentBound.pos, rd, currentBound.bound, m).y != -1.0 && dist < boundRadius) {
+            numHits+=1;
             int foundPos = closestPos;
             data[numChildren] = OrganizerFrame(-1, dist, 7+i);
 
@@ -569,32 +562,26 @@ RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
 
       float currentDepth = max(intersectionPoints.x, 0.0);
 
-      if (depth >= currentDepth) {
-        float maxDist = intersectionPoints.y;
-        float lastDist = boundRadius;
-        float numREPEATS = 0.0;
-        for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-          float dist = sdShapeNode(p + currentDepth * rd, currentItem, boundRadius);
-          //float dist = sdPrimitiveWithTransform(p+currentDepth*rd, currentItem, boundRadius);
-          //pushShapeStackFrame(currentItem);
-          //popShapeStackFrame();
-          if (currentDepth >= maxDist || currentDepth >= depth || lastDist < dist) {
-            break;
-          } else if (dist <= PRECISION) {
-            if (currentDepth <= depth) {
-              hit = true;
-              hitAddr = currentItem;
-              //hit = numREPEATS/float(MAX_MARCHING_STEPS);
-              depth = currentDepth;
-            }
-            break;
-          }
 
-          currentDepth += dist;
-          lastDist = dist;
+      float maxDist = intersectionPoints.y;
+        //float lastDist = boundRadius;
+        //float numREPEATS = 0.0;
+      for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
+        float dist = sdShapeNode(p + currentDepth * rd, currentItem, boundRadius);
+        //float dist = sdPrimitiveWithTransform(p+currentDepth*rd, currentItem, boundRadius);
+        //pushShapeStackFrame(currentItem);
+        //popShapeStackFrame();
+        if (dist <= PRECISION || currentDepth+dist >= maxDist || currentDepth >= depth) {
+          hit = ((currentDepth <= depth) && (dist <= PRECISION)) ? true : hit;
+          hitAddr = ((currentDepth <= depth) && (dist <= PRECISION)) ? currentItem : hitAddr;
+            //hit = numREPEATS/float(MAX_MARCHING_STEPS);
+          depth = ((currentDepth <= depth) && (dist <= PRECISION)) ? currentDepth : depth;
+          break;
         }
-        //hit = numREPEATS/float(MAX_MARCHING_STEPS);
+        currentDepth += dist;
       }
+      //hit = numREPEATS/float(MAX_MARCHING_STEPS);
+    
       
       popBVHStackFrame();
     }
@@ -602,7 +589,7 @@ RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
 
   clearBVHStack();
 
-  return RayResult(p + rd*depth, hit, hitAddr);
+  return RayResult(p + rd*depth, hit, hitAddr, numHits);
 }
 
 vec3 calcNormal(vec3 p, Pointer address, float boundRadius) {
@@ -678,4 +665,6 @@ void main() {
     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
   }
 */
+
+  //gl_FragColor += vec4(0.2, 0.0, 0.0, 0.0) *foundIntersection.numHits;
 }

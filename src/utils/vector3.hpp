@@ -34,6 +34,7 @@ public:
 
   float length() const;
   Vector3 normalize() const;
+  Vector3 abs() const;
   Vector3 cross(const Vector3& rhs) const;
 
   static Vector3 fromGlslVec3(const sf::Glsl::Vec3& in);

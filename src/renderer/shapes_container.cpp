@@ -71,12 +71,13 @@ void ShapesContainer::removeMaterial(std::string name) {
     throw std::invalid_argument("Error, attempted to remove default material!");
     return;
   }
-  
-  //loop through all shapes that are recorded as having that material and give them the default material
-  for (int i = 0; i < _materials[name].shapeWithMat.size(); i++) {
-    _materials[name].shapeWithMat[i]->setMaterial(_defaultMat.getAddress(), _defaultMat.getName());
-    _materials[name].shapeWithMat[i]->updateParams(_writeBuffer);
-    _memoryBuffer.writeItem(_materials[name].shapeWithMat[i]->getAddress().pointerIndex(), _writeBuffer);
+
+  while (!_materials[name].shapeWithMat.empty()) {
+    Shape * defShape = _materials[name].shapeWithMat.back();
+    _materials[name].shapeWithMat.pop_back();
+    defShape->setMaterial(_defaultMat.getAddress(), _defaultMat.getName());
+    defShape->updateParams(_writeBuffer);
+    _memoryBuffer.writeItem(defShape->getAddress().pointerIndex(), _writeBuffer);
   }
 
   _memoryBuffer.freeItem(_materials[name].mat.getAddress().pointerIndex());
@@ -91,6 +92,9 @@ void ShapesContainer::addShape(Shape * shape) {
   }
 
   Pixel newAddress = _memoryBuffer.newItem();
+
+  shape->setAddress(newAddress);
+
   //if the shape already has a material, try to go ahead and set it
   if (_materials.find(shape->getMaterial()) != _materials.end()) {
     setMaterial(shape, shape->getMaterial());
@@ -99,7 +103,6 @@ void ShapesContainer::addShape(Shape * shape) {
   }
 
   //write the shape to the memory buffer
-  shape->setAddress(newAddress);
   shape->updateParams(_writeBuffer);
   _memoryBuffer.writeItem(shape->getAddress().pointerIndex(), _writeBuffer);
 }
@@ -134,6 +137,13 @@ void ShapesContainer::updateShape(Shape * shape) {
 }
 
 void ShapesContainer::setMaterial(Shape * shape, std::string name) {
+
+  //if this is the same material as the one the shape already has, just go ahead and
+  //return
+  if (shape->getMaterial() == name) {
+    return;
+  }
+
   //if the shape's material is not an empty string or the default material, and it is a material in the collection, it should be erased
   if ((shape->getMaterial() != "") && (shape->getMaterial() != _defaultMat.getName()) && (_materials.find(shape->getMaterial()) != _materials.end())) {
     //find the material
@@ -163,12 +173,6 @@ void ShapesContainer::setMaterial(Shape * shape, std::string name) {
   shape->updateParams(_writeBuffer);
   _memoryBuffer.writeItem(shape->getAddress().pointerIndex(), _writeBuffer);
 
-  //find the shape in the list of shapes with that material
-  auto it = std::find(_materials[shape->getMaterial()].shapeWithMat.begin(), _materials[shape->getMaterial()].shapeWithMat.end(), shape);
-  //if the shape was there, erase it
-  if (it != _materials[shape->getMaterial()].shapeWithMat.end()) {
-    _materials[shape->getMaterial()].shapeWithMat.erase(it);
-  }
   //append the shape to the list of shapes with that material
   _materials[name].shapeWithMat.push_back(shape);
 }

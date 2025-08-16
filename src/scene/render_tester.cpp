@@ -28,32 +28,35 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   //state->rayMarcher.update();
   testSphere = new Sphere();
   testSphere->setRadius(1.0);
-  testSphere->setOffset(sf::Glsl::Vec3(0.0, 0.0, 0.0));
+  testSphere->transform.setOffset(Vector3(0.0, 0.0, 0.0));
   state->rayMarcher.addShape(testSphere);
 
   testSphere2 = new Sphere();
   testSphere2->setRadius(1.0);
-  testSphere2->setOffset(sf::Glsl::Vec3(1.0, 0.0, 0.0));
+  testSphere2->transform.setOffset(Vector3(1.0, 0.0, 0.0));
   state->rayMarcher.addShape(testSphere2);
 
 
 
   testBox = new Box();
   testBox->setSize(sf::Glsl::Vec3(1.0, 2.0, 1.0));
-  testBox->setOffset(sf::Glsl::Vec3(10.0, 2.0, 0.0));
+  testBox->transform.setOffset(Vector3(10.0, 2.0, 0.0));
+  //testBox->transform.setRotationOrigin(Vector3(1.0, 2.0, 1.0));
   state->rayMarcher.addShape(testBox);
+
+  testParent.addChild(&testBox->transform);
   
   //testSphere2->printParams();
 
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 80;
-  for (int i = 0; i < 400; i++) {
+  for (int i = 0; i < 0; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = -(rand() % rangeZ);
     Sphere * newSphere = new Sphere();
-    newSphere->setOffset(sf::Glsl::Vec3(randX, randY, randZ));
+    newSphere->transform.setOffset(Vector3(randX, randY, randZ));
     newSphere->setRadius(.8);
     state->rayMarcher.addShape(newSphere);
     spheres.push_back(newSphere);
@@ -133,10 +136,25 @@ void RenderTester::update(sf::RenderWindow * window) {
 
   //std::cout << "xChange: " << xChange << " yChange: " << yChange << std::endl;
 
-  testSphere2->setOffset(sf::Glsl::Vec3((std::sin(testSphereOffset)+1.5), 0, 0));
+  testSphere2->transform.setOffset(Vector3((std::sin(testSphereOffset)+1.5), 0, 0));
   state->rayMarcher.updateShape(testSphere2);
-  testSphere->setOffset(sf::Glsl::Vec3(0.0, std::cos(testSphereOffset)+1, 0));
+  testSphere->transform.setOffset(Vector3(0.0, std::cos(testSphereOffset)+1, 0));
   state->rayMarcher.updateShape(testSphere);
+
+  Quaternion boxOrientation = testBox->transform.getOrientation();
+
+  Quaternion qPitch(Vector3(1.0, 0.0, 0.0), state->deltaTime.asSeconds());
+  Quaternion qYaw(Vector3(0.0, 1.0, 0.0), state->deltaTime.asSeconds());
+  testBox->transform.setOrientation((boxOrientation*qPitch).normalize());
+
+  testParent.setOrientation((testParent.getOrientation()*qYaw).normalize());
+  //testParent.setOffset(Vector3((std::sin(testSphereOffset)+1.5), 0, 0));
+
+  //testBox->setSize(sf::Glsl::Vec3(std::cos(testSphereOffset*7.4)+1.6, std::sin(testSphereOffset*10.0)+1.1, 1.0));
+  state->rayMarcher.updateShape(testBox);
+
+  //testBox->debugPrint();
+
 
 /*
   for (int i = 0; i < 10; i++) {

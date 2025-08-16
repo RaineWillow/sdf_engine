@@ -15,6 +15,9 @@
 #include "../renderer/shapes.hpp"
 #include "../renderer/light.hpp"
 #include "../renderer/camera_3d.hpp"
+#include "../renderer/transform.hpp"
+#include "../utils/vector3.hpp"
+#include "../utils/quaternion.hpp"
 
 class RenderTester : public Scene {
 public:
@@ -32,6 +35,8 @@ private:
   Sphere * testSphere;
   Sphere * testSphere2;
   Box * testBox;
+
+  Transform testParent;
 
   Light * testLight1;
   Light * testLight2;

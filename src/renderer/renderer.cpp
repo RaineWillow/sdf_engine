@@ -4,7 +4,8 @@ Renderer::Renderer(int width, int height, float cameraDist) :
 _marchDrawable(sf::Quads, 4), 
 _shapesContainer(1),
 _BVHUnion(2),
-_defaultCamera(Vector3(0.0, 0.0, cameraDist)) {
+_defaultCamera(Vector3(0.0, 0.0, cameraDist)),
+waitTime(8) {
   if (!_marcher.loadFromFile("src/glsl/ray_marcher.frag", sf::Shader::Fragment)) {
 
   }
@@ -30,6 +31,8 @@ _defaultCamera(Vector3(0.0, 0.0, cameraDist)) {
   _BVHUnion.bind(_marcher, "BVHUnion");
 
   _currentCamera = &_defaultCamera;
+
+  last = std::chrono::steady_clock::now();
 }
 
 Renderer::~Renderer() {
@@ -101,6 +104,25 @@ void Renderer::resetToDefaultCamera() {
 }
 
 void Renderer::update() {
+  //TODO::GET RID OF THIS
+  /*
+  this is a temporary fix -- each time this runs, there is a call to the gpu to
+  write a lot of data and also flush the gpu write buffer, which is calling often 
+  multiple times per frame. At 60 fps, that's not a lot, but at say, 3000, that's a
+  significant number of writes and flushes, which can lead to completely flooding
+  the PCI write bus. So, by default, it is locked to actually updating once
+  every 8 milliseconds, preventing this issue. However, in the future, more
+  performant code that creates less writes, and a rewrite of the library function 
+  to add a flag to prevent GPU flushes before it is done writing may see an decrease
+  in wait times or even removal of this limit.
+  */
+  currentTime = std::chrono::steady_clock::now();
+  if (!((currentTime-last) > waitTime) && !initialUpdate) {
+    return;
+  } else {
+    initialUpdate = false;
+  }
+  
   _marcher.setUniform("cameraPosition", _currentCamera->loadCameraPosition());
   _marcher.setUniform("cameraForward", _currentCamera->loadCameraForward());
   _marcher.setUniform("cameraUp", _currentCamera->loadCameraUp());
@@ -110,6 +132,8 @@ void Renderer::update() {
   _BVHUnion.update();
 
   FinishHelperContext barrier;
+
+  last = currentTime; 
 }
 
 const sf::Texture & Renderer::render() {

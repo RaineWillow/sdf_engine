@@ -72,6 +72,11 @@ private:
   Camera3d _defaultCamera;
 
   Camera3d * _currentCamera;
+
+  std::chrono::milliseconds waitTime;
+  std::chrono::time_point<std::chrono::steady_clock> last;
+  std::chrono::time_point<std::chrono::steady_clock> currentTime;
+  bool initialUpdate = true;
 };
 
 #endif

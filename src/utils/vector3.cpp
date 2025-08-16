@@ -94,6 +94,10 @@ Vector3 Vector3::normalize() const {
   return Vector3(_x/magnitude, _y/magnitude, _z/magnitude);
 }
 
+Vector3 Vector3::abs() const {
+  return Vector3(std::fabs(_x), std::fabs(_y), std::fabs(_z));
+}
+
 Vector3 Vector3::cross(const Vector3& rhs) const {
   return Vector3(
     _y*rhs._z - _z*rhs._y,

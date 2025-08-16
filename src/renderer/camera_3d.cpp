@@ -8,10 +8,12 @@ _forward(0.0, 0.0, -1.0), _up(0.0, 1.0, 0.0), _right(1.0, 0.0, 0.0) {}
 
 void Camera3d::setPitchAndYaw(float pitch, float yaw) {
   Quaternion qYaw(Vector3(0.0, 1.0, 0.0), yaw);
-  Quaternion qPitch(_right, pitch);
+  
   
   _orientation = qYaw * _orientation;
   _orientation.normalize();
+  _right = (_orientation * Quaternion::fromVector3(Vector3(1.0, 0.0, 0.0)) * _orientation.conjugate()).toVector3();
+  Quaternion qPitch(_right, pitch);
   _orientation = qPitch * _orientation;
   _orientation.normalize();
 
