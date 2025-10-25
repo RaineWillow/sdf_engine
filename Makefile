@@ -1,6 +1,6 @@
 CXX:=g++
 CFLAGS:= -march=native -Ofast
-DEBUGFLAGS := -Og -ggdb
+DEBUGFLAGS := -Og -ggdb -fsanitize=address
 DEBUGGER := gdb
 
 ifeq ($(OS),Windows_NT)
@@ -67,7 +67,7 @@ clean:
 
 debug: CFLAGS = $(DEBUGFLAGS)
 debug: clean $(BUILD_DIR)/$(TARGET_EXEC)
-	$(RUNPRECONDITION) $(DEBUGGER) $(BUILD_DIR)/$(TARGET_EXEC)
+	$(DEBUGGER) $(BUILD_DIR)/$(TARGET_EXEC)
 
 release: CFLAGS += $(RELEASEFLAGS)
 release: clean $(BUILD_DIR)/$(TARGET_EXEC)

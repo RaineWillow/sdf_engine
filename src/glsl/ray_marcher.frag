@@ -291,7 +291,7 @@ AABB getBoundingBoxFromPointer(Pointer item) {
 
 struct BVHStackFrame {
   Pointer currentAddress;
-  int children[8];
+  int children[9];
   int remainingChildren;
   bool processed;
 };
@@ -308,7 +308,7 @@ int itemsOnBVHStack = 0;
 
 void pushBVHStackFrame(Pointer newItem) {
   if (itemsOnBVHStack < maxBVHStackSize) {
-    BVHStack[itemsOnBVHStack] = BVHStackFrame(newItem, int[8](0, 0, 0, 0, 0, 0, 0, 0), 0, false);
+    BVHStack[itemsOnBVHStack] = BVHStackFrame(newItem, int[9](0, 0, 0, 0, 0, 0, 0, 0, 0), 0, false);
     itemsOnBVHStack += 1;
   }
 }
@@ -321,7 +321,7 @@ void clearBVHStack() {
   itemsOnBVHStack = 0;
 }
 
-#define maxShapeStackSize 40
+#define maxShapeStackSize 30
 
 struct ShapeStackFrame {
   Pointer currentAddress;
@@ -490,11 +490,11 @@ RayResult castRay(vec3 ro, vec3 rd, float boundRadius) {
     } else if (currentItem.type == BVH_PTR_TYPE) {
       //algorithm for sorting objects by distance and inserting in order by distance and intersection
       ///*
-      OrganizerFrame data[8];
+      OrganizerFrame data[9];
       int closestPos = 0;
       int numChildren = 0;
 
-      for (int i = 0; i < 8; i++) {
+      for (int i = 0; i < 9; i++) {
         Pointer currentChild = convertPixToPointer(accessBVHUnionParameter(currentItem.address, 7+i));
         if (currentChild.type != NULL_PTR_TYPE) {
           

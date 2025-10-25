@@ -1,11 +1,11 @@
 #include "BVH_tree.hpp"
 
-BVHTree::BVHTree(int memoryBufferId) : _memoryBuffer(64, 2000, 15, memoryBufferId), 
+BVHTree::BVHTree(int memoryBufferId) : _memoryBuffer(64, 2000, 16, memoryBufferId), 
 _keepTracker(sf::Glsl::Vec3(-1, -1, -1), sf::Glsl::Vec3(-1, -1, -1)){
   
   //_writeBuffer = new sf::Uint8[15*4];
   Pixel _rootAddress = _memoryBuffer.newItem();
-  _root = new BVHTreeNode(false, true, _rootAddress);
+  _root = _nodePool.aquire(false, true, _rootAddress);
   _root->updateParams(_writeBuffer);
 
   _memoryBuffer.writeItem(_root->getAddress().pointerIndex(), _writeBuffer);
@@ -39,11 +39,54 @@ AxisAlignedBoundingBox BVHTree::resizeNodeFromChildren(BVHTreeNode * node) {
   return collection;
 }
 
+void BVHTree::addItemToLink(BVHTreeNode * link, BVHTreeNode * item) {
+  if (!link->isLink()) {
+    throw std::invalid_argument("Error, attempted to link an item but the link container was something other than a link!");
+  }
+
+  if (!item->isLeaf()) {
+    throw std::invalid_argument("Error, attempted to add an item to a link when it wasn't a leaf! Only leaf nodes can be added to a link!");
+  }
+
+  //there are no children present in the link container, just add it to 0
+  if (!link->hasChildren()) {
+    link->setChild(0, item);
+    link->updateParams(_writeBuffer);
+    _memoryBuffer.writeItem(link->getAddress().pointerIndex(), _writeBuffer);
+    return;
+  }
+
+  //there is a free location in the link container, add it to the free loc
+  int freeChild = link->anyFree();
+  if (freeChild != -1) {
+    link->setChild(freeChild, item);
+    link->updateParams(_writeBuffer);
+    _memoryBuffer.writeItem(link->getAddress().pointerIndex(), _writeBuffer);
+    return;
+  }
+
+  //there was no free location, we must step down to the next link container
+  if (!link->hasLink()) {
+    Pixel linkAddress = _memoryBuffer.newItem();
+    BVHTreeNode * newLink = _nodePool.aquire(false, false, true, linkAddress);
+      
+    link->setLink(newLink);
+    _memoryBuffer.writeItem(newLink->getAddress().pointerIndex(), _writeBuffer);
+  }
+
+  link->getLink()->setPos(link->getPos());
+  link->getLink()->setBound(link->getBound());
+
+  addItemToLink(link->getLink(), item);
+  _memoryBuffer.writeItem(link->getAddress().pointerIndex(), _writeBuffer);
+
+  return;
+}
+
 
 void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   //if the node does not have any children, simply set this node as the first child and 
   //set our bounding box accordingly.
-
   if (!node->hasChildren()) {
     node->setPos(item->getPos());
     node->setBound(item->getBound());
@@ -74,8 +117,44 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
     return;
   }
 
-  //we did not have any free node positions. We need to get the octant of the new item
-  //based on it's position.
+  //We didn't have any free positions, but we may not want to subdivide. Lets
+  //see if we can add the item to a node's linked list
+  /*
+  std::cout << std::setprecision(10);
+  std::cout << "Node: " << node->getPos().x << " " << node->getPos().y << " " << node->getPos().z << " : "
+   << node->getBound().x << " " << node->getBound().y << " " << node->getBound().z << " " << std::endl;
+  std::cout << "Item: " << item->getPos().x << " " << item->getPos().y << " " << item->getPos().z << " : "
+   << item->getBound().x << " " << item->getBound().y << " " << item->getBound().z << " " << std::endl;
+  std::cout << "Bounded: " << boundedByBox(AxisAlignedBoundingBox(node->getPos(), node->getBound()), 
+    AxisAlignedBoundingBox(item->getPos(), item->getBound())) << std::endl;
+  */
+  
+  if ((!parentShouldSubdivide(
+    AxisAlignedBoundingBox(node->getPos(), node->getBound()), 
+    AxisAlignedBoundingBox(item->getPos(), item->getBound()), 
+    _subdivideThreshold) || node->getLayer() >= 18) && item->isLeaf()) {
+    
+
+    //we now know that we can in fact use a link node here. Lets create it!
+    if (!node->hasLink()) {
+      Pixel linkAddress = _memoryBuffer.newItem();
+      BVHTreeNode * newLink = _nodePool.aquire(false, false, true, linkAddress);
+      
+      node->setLink(newLink);
+      _memoryBuffer.writeItem(newLink->getAddress().pointerIndex(), _writeBuffer);
+    }
+
+    node->getLink()->setPos(node->getPos());
+    node->getLink()->setBound(node->getBound());
+
+    addItemToLink(node->getLink(), item);
+
+    _memoryBuffer.writeItem(node->getAddress().pointerIndex(), _writeBuffer);
+    return;
+  }
+
+  //we did not have any free node positions and we must subdivide. 
+  //We need to get the octant of the new item based on it's position.
   int itemOctant = getBoxOctant(newBox, item->getPos());
 
   std::vector<int> childBoxIndexes;
@@ -108,7 +187,7 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   for (auto const& x : leafOctMap) {
     if (x.second.size() > 1) {
       Pixel newAddress = _memoryBuffer.newItem();
-      BVHTreeNode * newBoundingVolume = new BVHTreeNode(false, false, newAddress);
+      BVHTreeNode * newBoundingVolume = _nodePool.aquire(false, false, newAddress);
       for (int i = 0; i < x.second.size(); i++) {
         node->removeChild(x.second[i]->getParentIndex());
         addItemFromNode(newBoundingVolume, x.second[i]);
@@ -119,7 +198,7 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
 
       node->updateParams(_writeBuffer);
       _memoryBuffer.writeItem(node->getAddress().pointerIndex(), _writeBuffer);
-      this->addItemFromNode(node, item);
+      addItemFromNode(node, item);
       return;
     }
   }
@@ -180,7 +259,7 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
   //std::cout << "Num Bounding volumes: " << octMap.size() << std::endl;
   for (auto const& x : octMap) {
     Pixel newAddress = _memoryBuffer.newItem();
-    BVHTreeNode * newBoundingVolume = new BVHTreeNode(false, false, newAddress);
+    BVHTreeNode * newBoundingVolume = _nodePool.aquire(false, false, newAddress);
     for (int i = 0; i < x.second.size(); i++) {
       //newBoundingVolume->setChild(newBoundingVolume->anyFree(), x.second[i]);
       addItemFromNode(newBoundingVolume, x.second[i]);
@@ -205,176 +284,6 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
 
 void BVHTree::addItemToRoot(BVHTreeNode * item) {
   this->addItemFromNode(_root, item);
-}
-
-void BVHTree::destroyNode(BVHTreeNode * node) {
-  if (!node->hasParent()) {
-    throw std::invalid_argument("Error, this node does not have a parent node.");
-  }
-
-  if (node->hasChildren()) {
-    throw std::invalid_argument("Error, attempted to destroy a node with children.");
-  }
-  BVHTreeNode * currentNode = node;
-  BVHTreeNode * parent = node->getParent();
-
-  //destroy item from parent, determine if parent needs to be deleted
-  while (true) {
-    if (!currentNode->isLeaf()) {
-      _memoryBuffer.freeItem(currentNode->getAddress().pointerIndex());
-    }
-    parent->removeChild(currentNode->getParentIndex());
-    BVHTreeNode * deleteNode = currentNode;
-    delete deleteNode;
-    deleteNode = NULL;
-    if (!parent->hasChildren() && !parent->isRoot()) {
-      if (!parent->hasParent()) {
-        throw std::logic_error("Tried to travel to upper node, but there was no parent and the node was not root!");
-      }
-      currentNode = parent;
-      parent = parent->getParent();
-    } else {
-      currentNode = parent;
-      break;
-    }
-  }
-
-  while (true) {
-    //std::cout << "Adding up bounding boxes!" << std::endl;
-    //now, we must add the bounding boxes of the node's remaining children
-    AxisAlignedBoundingBox collection = resizeNodeFromChildren(currentNode);
-    //std::cout << "X: " << collection.pos.x << " Y: " << collection.pos.y << " Z: " << collection.pos.z << std::endl;
-    bool canBreak = collection==AxisAlignedBoundingBox(currentNode->getPos(), currentNode->getBound());
-    currentNode->setPos(collection.pos);
-    currentNode->setBound(collection.bound);
-    currentNode->updateParams(_writeBuffer);
-    _memoryBuffer.writeItem(currentNode->getAddress().pointerIndex(), _writeBuffer);
-
-    if (currentNode->isRoot() || canBreak) {
-      break;
-    } else {
-      if (!currentNode->hasParent()) {
-        throw std::logic_error("Error, current node does not have a parent but is not root!");
-      }
-      currentNode = currentNode->getParent();
-    }
-  }
-
-  _keepTracker.pos = _root->getPos();
-  _keepTracker.bound = _root->getBound();
-  _hasAnyBoxes = _root->hasChildren();
-}
-
-//DEPRICATED, DO NOT USE
-void BVHTree::updateNode(BVHTreeNode * node) {
-
-  if (!node->hasParent()) {
-    std::cout << "is root: " << node->isRoot() << " is leaf: " << node->isLeaf() << std::endl;
-    throw std::invalid_argument("Error, this node does not have a parent node!");
-  }
-
-  if (_resetFlag) {
-    return;
-  }
-
-  BVHTreeNode * currentNode = node;
-  BVHTreeNode * parent = node->getParent();
-
-  AxisAlignedBoundingBox currentBox = AxisAlignedBoundingBox(currentNode->getPos(), currentNode->getBound());
-  AxisAlignedBoundingBox parentBox = AxisAlignedBoundingBox(parent->getPos(), parent->getBound());
-
-
-  //if the new bounding box was already bounded by it's parent's bounding box, we can safely return
-  if (boundedByBox(parentBox, currentBox)) {
-    return;
-  }
-
-  //if the parent is the root, simply resize the root node and move on
-  if (parent->isRoot()) {
-    AxisAlignedBoundingBox collection = resizeNodeFromChildren(parent);
-    parent->setPos(collection.pos);
-    parent->setBound(collection.bound);
-    parent->updateParams(_writeBuffer);
-    _memoryBuffer.writeItem(parent->getAddress().pointerIndex(), _writeBuffer);
-    //std::cout << "Is Root!" << std::endl;
-    return;
-  }
-
-  if (!parent->hasParent()) {
-    throw std::invalid_argument("Error, this parent node does not have a parent node despite not being root!");
-  }
-
-  //now we want to see if we can resize the parent node by checking against it's parent
-  BVHTreeNode * upperParent = parent->getParent();
-
-  AxisAlignedBoundingBox upperParentBox = AxisAlignedBoundingBox(upperParent->getPos(), upperParent->getBound());
-  AxisAlignedBoundingBox testParentBox = resizeNodeFromChildren(parent);
-
-  //if the changed box is bounded by the upper parent, we can simply resize
-  //and move on
-  if (boundedByBox(upperParentBox, testParentBox)) {
-    parent->setPos(testParentBox.pos);
-    parent->setBound(testParentBox.bound);
-    parent->updateParams(_writeBuffer);
-    _memoryBuffer.writeItem(parent->getAddress().pointerIndex(), _writeBuffer);
-    return;
-  }
-
-  //if the box octant of the changed box is the same, we can simply add a 
-  //recursion of this function to update the parent
-  
-  if (pointInsideAABB(upperParentBox, testParentBox.pos)) {  
-    if (getBoxOctant(upperParentBox, testParentBox.pos)==getBoxOctant(upperParentBox, parentBox.pos)) {
-      //std::cout << "Does this ever even happen? it's likely that it doesn't..." << std::end
-      parent->setPos(testParentBox.pos);
-      parent->setBound(testParentBox.bound);
-      parent->updateParams(_writeBuffer);
-      _memoryBuffer.writeItem(parent->getAddress().pointerIndex(), _writeBuffer);
-      updateNode(parent);
-      return;
-    }
-  }
-  
-
-  //now, we get to the most potentially expensive case, wherein we must
-  //remove the node from it's parent, delete the parent if it is now empty,
-  //and readd the node from the root
-  //parent->removeChild(currentNode->getParentIndex());
-  
-  
-  
-
-  if (parent->hasChildren()) {
-    //std::cout << "Had children!" << std::endl;
-    while (true) {
-      AxisAlignedBoundingBox collection = resizeNodeFromChildren(parent);
-      bool canBreak = collection==AxisAlignedBoundingBox(parent->getPos(), parent->getBound());
-      parent->setPos(collection.pos);
-      parent->setBound(collection.bound);
-      parent->updateParams(_writeBuffer);
-      _memoryBuffer.writeItem(parent->getAddress().pointerIndex(), _writeBuffer);
-      
-      if (parent->isRoot() || canBreak) {
-        //std::cout << canBreak << std::endl;
-        break;
-      } else {
-        if (!parent->hasParent()) {
-          throw std::logic_error("Error, current node does not have a parent but is not root!");
-        }
-        parent = parent->getParent();
-      }
-    }
-  } else {
-    //std::cout << "DESTROYED NODE" << std::endl;
-    destroyNode(parent);
-  }
-
-  //simply readd the current node to the tree from the root
-  //addItemToRoot(currentNode);
-
-  _keepTracker.pos = _root->getPos();
-  _keepTracker.bound = _root->getBound();
-  _hasAnyBoxes = _root->hasChildren();
 }
 
 void BVHTree::addLeafToRoot(BVHTreeNode * leafNode) {
@@ -423,14 +332,22 @@ void BVHTree::destroyAllChildrenOfNode(BVHTreeNode * node) {
     if (node->hasChild(i)) {
 
       BVHTreeNode * child = node->getChild(i);
-      if (child->hasChildren()) {
+      if (child->hasChildren() || child->hasLink()) {
         destroyAllChildrenOfNode(child);
       }
 
       _memoryBuffer.freeItem(child->getAddress().pointerIndex());
       node->removeChild(i);
-      delete child;
+      _nodePool.freeItem(child);
     }
+  }
+
+  if (node->hasLink()) {
+    BVHTreeNode * link = node->getLink();
+    destroyAllChildrenOfNode(link);
+    _memoryBuffer.freeItem(link->getAddress().pointerIndex());
+    node->removeLink();
+    _nodePool.freeItem(link);
   }
 }
 
@@ -457,7 +374,7 @@ void BVHTree::resetTree() {
 }
 
 BVHTreeNode * BVHTree::addLeaf(Pixel address, sf::Glsl::Vec3 pos, sf::Glsl::Vec3 bound) {
-  BVHTreeNode * leafNode = new BVHTreeNode(true, false, address);
+  BVHTreeNode * leafNode = _nodePool.aquire(true, false, address);
   leafNode->setPos(pos);
   leafNode->setBound(bound);
 
@@ -470,7 +387,34 @@ BVHTreeNode * BVHTree::addLeaf(Pixel address, sf::Glsl::Vec3 pos, sf::Glsl::Vec3
 void BVHTree::updateLeaf(BVHTreeNode * node, sf::Glsl::Vec3 pos, sf::Glsl::Vec3 bound) {
   node->setPos(pos);
   node->setBound(bound);
-  updateNode(node);
+}
+
+void BVHTree::destroyLeaf(BVHTreeNode * node) {
+  if (!node->isLeaf()) {
+    throw std::invalid_argument("Error, attempted to destroy a node which was not a leaf!");
+  }
+
+  auto it = std::find(_leafNodes.begin(), _leafNodes.end(), node);
+
+  if (it==_leafNodes.end()) {
+    throw std::invalid_argument("Error, attempted to destroy a node that either doesn't exist in the tree or hasn't loaded yet! (If recently added, it might be in staging! Must call full update before removing!)");
+  }
+
+  if (node->hasParent()) {
+    node->getParent()->removeChild(node->getParentIndex());
+  }
+
+  _memoryBuffer.freeItem(node->getAddress().pointerIndex());
+
+  _nodePool.freeItem(node);
+}
+
+bool BVHTree::hasLeaf(BVHTreeNode * node) {
+  if (!node->isLeaf()) {
+    throw std::invalid_argument("Error, attempted to destroy a node which was not a leaf!");
+  }
+
+  return std::find(_leafNodes.begin(), _leafNodes.end(), node)!=_leafNodes.end();
 }
 
 void BVHTree::recurseTree(BVHTreeNode* nextItem, int layer, std::map<int, std::string> & layerData) {

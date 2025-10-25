@@ -9,6 +9,7 @@
 
 class Scene {
 public:
+  virtual ~Scene()=default;
   virtual void handleScreensizeChange()=0;
   virtual void handleEvent(sf::RenderWindow * window, sf::Event & event)=0;
   virtual void handleController()=0;

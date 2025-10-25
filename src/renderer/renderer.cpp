@@ -60,7 +60,7 @@ void Renderer::addShape(Shape * shape) {
 
 void Renderer::destroyShape(Shape * shape) {
   _shapesContainer.destroyShape(shape);
-  _BVHUnion.destroyNode(shape->getBVHTreeNode());
+  _BVHUnion.destroyLeaf(shape->getBVHTreeNode());
   //std::cout << _BVHUnion.drawTree() << std::endl;
 }
 

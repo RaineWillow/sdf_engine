@@ -45,13 +45,16 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   state->rayMarcher.addShape(testBox);
 
   testParent.addChild(&testBox->transform);
+  testParent.addChild(&testSphere->transform);
+  testParent.addChild(&testSphere2->transform);
+  
   
   //testSphere2->printParams();
 
   int rangeX = 120;
   int rangeY = 120;
-  int rangeZ = 80;
-  for (int i = 0; i < 0; i++) {
+  int rangeZ = 120;
+  for (int i = 0; i < 4000; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = -(rand() % rangeZ);
@@ -60,6 +63,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
     newSphere->setRadius(.8);
     state->rayMarcher.addShape(newSphere);
     spheres.push_back(newSphere);
+    basePositions.push_back(newSphere->transform.getOffset());
   }
 /*
   Sphere * finalSphere = new Sphere();
@@ -156,14 +160,15 @@ void RenderTester::update(sf::RenderWindow * window) {
   //testBox->debugPrint();
 
 
-/*
-  for (int i = 0; i < 10; i++) {
-    sf::Glsl::Vec3 curPos = spheres[i]->getPos();
-    spheres[i]->setOffset(sf::Glsl::Vec3(curPos.x+std::sin(testSphereOffset), curPos.y+std::cos(testSphereOffset), curPos.z));
+
+  for (int i = 0; i < 4000; i++) {
+    Vector3 curPos = basePositions[i];
+    spheres[i]->transform.setOffset(Vector3(curPos.getX()+std::sin(testSphereOffset*(0.5*((float)i / (float)400))), curPos.getY()+std::cos(testSphereOffset*(0.5*((float)i / 400.0))), curPos.getZ()));
+    
     //std::cout << spheres.size() << std::endl;
     state->rayMarcher.updateShape(spheres[i]);
   }
-*/
+
   state->rayMarcher.update();
 }
 

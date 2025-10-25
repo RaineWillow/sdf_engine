@@ -52,6 +52,7 @@ private:
   bool lockedMouse = false;
 
   std::vector<Sphere*> spheres;
+  std::vector<Vector3> basePositions;
 };
 
 #endif /* end of include guard: Render_tester_hpp */
