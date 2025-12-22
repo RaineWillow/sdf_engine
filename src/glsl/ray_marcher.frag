@@ -321,7 +321,7 @@ void clearBVHStack() {
   itemsOnBVHStack = 0;
 }
 
-#define maxShapeStackSize 30
+#define maxShapeStackSize 40
 
 struct ShapeStackFrame {
   Pointer currentAddress;

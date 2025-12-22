@@ -50,6 +50,8 @@ void BVHTree::addItemToLink(BVHTreeNode * link, BVHTreeNode * item) {
 
   //there are no children present in the link container, just add it to 0
   if (!link->hasChildren()) {
+    link->setPos(item->getPos());
+    link->setBound(item->getBound());
     link->setChild(0, item);
     link->updateParams(_writeBuffer);
     _memoryBuffer.writeItem(link->getAddress().pointerIndex(), _writeBuffer);
@@ -59,6 +61,12 @@ void BVHTree::addItemToLink(BVHTreeNode * link, BVHTreeNode * item) {
   //there is a free location in the link container, add it to the free loc
   int freeChild = link->anyFree();
   if (freeChild != -1) {
+    AxisAlignedBoundingBox newBox = addToBox(
+      AxisAlignedBoundingBox(link->getPos(), link->getBound()), 
+      AxisAlignedBoundingBox(item->getPos(), item->getBound())
+    );
+    link->setPos(newBox.pos);
+    link->setBound(newBox.bound);
     link->setChild(freeChild, item);
     link->updateParams(_writeBuffer);
     _memoryBuffer.writeItem(link->getAddress().pointerIndex(), _writeBuffer);
@@ -74,8 +82,8 @@ void BVHTree::addItemToLink(BVHTreeNode * link, BVHTreeNode * item) {
     _memoryBuffer.writeItem(newLink->getAddress().pointerIndex(), _writeBuffer);
   }
 
-  link->getLink()->setPos(link->getPos());
-  link->getLink()->setBound(link->getBound());
+  link->getLink()->setPos(sf::Glsl::Vec3(0, 0, 0));
+  link->getLink()->setBound(sf::Glsl::Vec3(0, 0, 0));
 
   addItemToLink(link->getLink(), item);
   _memoryBuffer.writeItem(link->getAddress().pointerIndex(), _writeBuffer);
@@ -144,8 +152,8 @@ void BVHTree::addItemFromNode(BVHTreeNode * node, BVHTreeNode * item) {
       _memoryBuffer.writeItem(newLink->getAddress().pointerIndex(), _writeBuffer);
     }
 
-    node->getLink()->setPos(node->getPos());
-    node->getLink()->setBound(node->getBound());
+    node->getLink()->setPos(sf::Glsl::Vec3(0, 0, 0));
+    node->getLink()->setBound(sf::Glsl::Vec3(0, 0, 0));
 
     addItemToLink(node->getLink(), item);
 

@@ -54,7 +54,7 @@ RenderTester::RenderTester(Console * inConsole, State * inState) {
   int rangeX = 120;
   int rangeY = 120;
   int rangeZ = 120;
-  for (int i = 0; i < 4000; i++) {
+  for (int i = 0; i < 0; i++) {
     int randX = (rand() % rangeX)-60;
     int randY = (rand() % rangeY)-60;
     int randZ = -(rand() % rangeZ);
@@ -161,9 +161,9 @@ void RenderTester::update(sf::RenderWindow * window) {
 
 
 
-  for (int i = 0; i < 4000; i++) {
+  for (int i = 0; i < 0; i++) {
     Vector3 curPos = basePositions[i];
-    spheres[i]->transform.setOffset(Vector3(curPos.getX()+std::sin(testSphereOffset*(0.5*((float)i / (float)400))), curPos.getY()+std::cos(testSphereOffset*(0.5*((float)i / 400.0))), curPos.getZ()));
+    spheres[i]->transform.setOffset(Vector3(curPos.getX()+std::sin(testSphereOffset*(((float)i / (float)400))), curPos.getY()+std::cos(testSphereOffset*(((float)i / 400.0))), curPos.getZ()));
     
     //std::cout << spheres.size() << std::endl;
     state->rayMarcher.updateShape(spheres[i]);
